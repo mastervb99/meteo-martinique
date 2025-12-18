@@ -1,126 +1,19 @@
 # Martinique Weather Dashboard
 
-Extract, process, and visualize weather data from the Météo France API for Martinique (French Caribbean).
+Weather data extraction, visualization, and alert notification system for Martinique using Météo France API. Includes full weather dashboard with interactive maps, charts, and SMS/Email subscription system via Brevo.
 
-## Prerequisites
+## Live Demo
 
-- Python 3.11 or higher
-- pip (Python package manager)
-- Virtual environment recommended
-
-## Installation
-
-1. **Extract the project**:
-   ```bash
-   unzip martinique_weather_v1.0_final.zip
-   cd martinique_weather
-   ```
-
-2. **Create a virtual environment**:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # macOS/Linux
-   # or: venv\Scripts\activate  # Windows
-   ```
-
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configure environment variables**:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your Météo France API credentials
-   ```
-
-## Configuration
-
-Get API credentials from: https://portail-api.meteofrance.fr/web/en
-
-Edit `.env` with your settings:
-
-```ini
-METEO_FRANCE_APP_ID=your_application_id
-METEO_FRANCE_API_KEY=your_api_key
-```
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| METEO_FRANCE_APP_ID | For live data | Your Météo France application ID |
-| METEO_FRANCE_API_KEY | For live data | Your Météo France API key |
-
-## Usage
-
-### View All Commands
-
-```bash
-python main.py --help
-```
-
-### Demo Mode (No API Key Required)
-
-Generate sample data and all visualizations to test the system:
-
-```bash
-python main.py demo
-python main.py demo --verbose      # Detailed logging
-python main.py demo --dry-run      # Preview without generating files
-```
-
-### Live Data Extraction
-
-Extract real weather data from Météo France API:
-
-```bash
-python main.py extract
-python main.py extract --verbose   # Detailed logging
-python main.py extract --dry-run   # Preview without API calls
-```
-
-### Automated Scheduler
-
-Start automated updates (vigilance every 30 min, full data every 3 hours):
-
-```bash
-python main.py schedule            # Continuous scheduler
-python main.py schedule --once     # Single update only
-```
-
-### System Information
-
-Check configuration and environment:
-
-```bash
-python main.py info
-```
-
-## Output Files
-
-After running, find outputs in `output/`:
-
-| File | Description |
-|------|-------------|
-| `data/city_forecasts.csv` | 7-day forecasts for all cities |
-| `data/hourly_*.csv` | 48-hour hourly data per city |
-| `data/vigilance_alerts.json` | Current alert levels and phenomena |
-| `maps/vigilance_map.html` | Interactive alert map |
-| `maps/forecast_map.html` | City forecast map with popups |
-| `maps/rain_map.html` | Precipitation heatmap |
-| `charts/temperature_chart.html` | Multi-city temperature trends |
-| `charts/hourly_dashboard_*.html` | Hourly multi-metric dashboard |
-| `charts/city_comparison.html` | Side-by-side city metrics |
-| `charts/vigilance_gauge.html` | Alert level gauge |
-
-Logs are saved to `logs/` with timestamps.
+- **Production:** https://meteo-martinique.onrender.com
+- **GitHub:** https://github.com/mastervb99/meteo-martinique
 
 ## Features
 
-**Data Extraction**
-- Weather forecasts for 10 major Martinique cities (7-day outlook)
-- Hourly forecasts with 48-hour granularity
-- Vigilance/alert data with phenomenon breakdown
-- Rain forecasts with next-hour precipitation probability
+**Weather Dashboard (4 Pages)**
+- Aujourd'hui: Current weather for all 10 Martinique cities
+- Prévisions: 7-day forecast with temperature charts
+- Cartes: Interactive maps (vigilance, forecast, rain) and comparison charts
+- Alertes: SMS/Email subscription for weather alerts
 
 **Interactive Maps (Folium)**
 - Vigilance map with color-coded alert overlays
@@ -133,103 +26,145 @@ Logs are saved to `logs/` with timestamps.
 - City comparison bar charts
 - Vigilance gauge indicator
 
-**CLI Features**
-- Typer-based CLI with rich output
-- `--verbose` flag for debug logging
-- `--dry-run` flag for preview mode
-- File logging with timestamps
-- Progress indicators
+**Alert Notifications (Brevo)**
+- SMS alerts via Brevo API
+- Email alerts via Brevo API
+- 4 subscriber profiles (Plaisancier, Agriculteur, Entreprise, Grand Public)
+- Direct subscription (no OTP verification)
+
+## Quick Start
+
+### Local Development
+
+```bash
+# Clone and setup
+git clone https://github.com/mastervb99/meteo-martinique.git
+cd martinique_weather
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your Brevo API key
+
+# Run API server
+python api.py
+# Open http://localhost:8000
+```
+
+### Deploy to Render.com
+
+1. Fork/push to GitHub
+2. Create new Web Service on Render
+3. Connect GitHub repo
+4. Add environment variable: `BREVO_API_KEY=your_key`
+5. Deploy
+
+## Configuration
+
+```bash
+# .env file
+BREVO_API_KEY=your_brevo_api_key          # Required for SMS/Email
+BREVO_SENDER_EMAIL=alertes@meteo-martinique.fr
+BREVO_SENDER_NAME=Meteo Martinique
+BREVO_SMS_SENDER=MeteoMQ
+
+# Optional: For live Météo France data
+METEO_FRANCE_APP_ID=your_app_id
+METEO_FRANCE_API_KEY=your_api_key
+```
+
+## API Endpoints
+
+### Weather Data
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/weather/current` | GET | Current weather all cities |
+| `/api/weather/forecast/{city}` | GET | 7-day forecast for city |
+| `/api/weather/hourly/{city}` | GET | 48-hour hourly forecast |
+| `/api/weather/vigilance` | GET | Current vigilance alerts |
+| `/api/cities` | GET | List of Martinique cities |
+
+### Maps & Charts
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/maps/vigilance` | GET | Vigilance map HTML |
+| `/api/maps/forecast` | GET | Forecast map HTML |
+| `/api/maps/rain` | GET | Precipitation map HTML |
+| `/api/charts/temperature` | GET | Temperature chart HTML |
+| `/api/charts/comparison` | GET | City comparison chart |
+| `/api/charts/hourly/{city}` | GET | Hourly dashboard chart |
+
+### Subscriptions
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/subscribe` | POST | Subscribe (direct, no OTP) |
+| `/api/subscribe/test` | POST | Send test alert |
+| `/api/subscribe/{ref}` | GET | Get subscription details |
+| `/api/subscribe/unsubscribe` | DELETE | Unsubscribe |
+
+### Utility
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | Health check |
+| `/api/generate/demo` | POST | Generate demo data |
 
 ## Project Structure
 
 ```
 martinique_weather/
-├── main.py                # Entry point - CLI with typer
-├── config.py              # Configuration, constants, geographic data
-├── utils.py               # Logging setup and helpers
-├── weather_extractor.py   # Météo France API data extraction
-├── map_generator.py       # Folium interactive map generation
-├── chart_generator.py     # Plotly chart/dashboard generation
-├── scheduler.py           # Automated update scheduler
-├── requirements.txt       # Python dependencies (pinned versions)
-├── .env.example           # Environment template
-├── .gitignore             # Git ignore patterns
-├── Dockerfile             # Docker container build
-├── docker-compose.yml     # Docker Compose configuration
-├── README.md              # This file
-├── PROJECT_STATUS.md      # Development status
-├── tests/                 # Unit tests
-├── logs/                  # Execution logs (auto-created)
-└── output/
-    ├── data/              # CSV and JSON data exports
-    ├── maps/              # Generated HTML maps
-    └── charts/            # Generated HTML charts
+├── api.py                 # FastAPI REST API (main entry)
+├── main.py                # CLI entry point
+├── config.py              # Configuration
+├── brevo_service.py       # Brevo SMS + Email
+├── subscriptions.py       # SQLite subscription management
+├── alert_broadcaster.py   # Alert broadcasting
+├── weather_extractor.py   # Météo France API
+├── map_generator.py       # Folium maps
+├── chart_generator.py     # Plotly charts
+├── scheduler.py           # Automated updates
+├── static/
+│   ├── alerte.html        # Subscription page (/)
+│   ├── aujourdhui.html    # Today's weather
+│   ├── previsions.html    # 7-day forecast
+│   └── cartes.html        # Maps page
+├── requirements.txt
+├── .env.example
+├── Dockerfile
+└── docker-compose.yml
 ```
 
-## Docker Deployment
+## CLI Commands
 
 ```bash
-docker-compose up -d martinique-weather     # Start scheduler
-docker-compose run --rm extract             # Single extraction
-docker-compose run --rm demo                # Demo mode
-docker-compose logs -f martinique-weather   # View logs
+python main.py demo          # Generate demo data
+python main.py extract       # Extract live data (needs API key)
+python main.py schedule      # Start automated updates
+python main.py info          # Show system info
 ```
 
-## Testing
+## Docker
 
 ```bash
-pytest tests/ -v                    # Run all tests
-pytest tests/ --cov=. --cov-report=html  # With coverage
+docker-compose up -d martinique-weather
+docker-compose logs -f martinique-weather
 ```
-
-## Troubleshooting
-
-### "ModuleNotFoundError"
-```bash
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### "API credentials not found"
-```bash
-cp .env.example .env
-# Edit .env with your Météo France credentials
-```
-
-### Check system status
-```bash
-python main.py info
-```
-
-### View detailed logs
-```bash
-python main.py demo --verbose
-```
-
-## How to Request Modifications
-
-Happy to make changes. When requesting modifications:
-1. Describe the change and expected behavior
-2. Provide sample input/output if applicable
-3. Note any urgency or deadlines
-
-Revisions are always free and fast. Message me on Upwork.
 
 ## Dependencies
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| meteofrance-api | 1.4.0 | Météo France API client |
-| folium | 0.20.0 | Interactive maps |
-| plotly | 6.5.0 | Charts and dashboards |
-| pandas | 2.3.3 | Data processing |
-| schedule | 1.2.2 | Task scheduling |
-| typer | 0.20.0 | CLI framework |
-| rich | 14.2.0 | Rich console output |
-| python-dotenv | 1.2.1 | Environment management |
+| Package | Purpose |
+|---------|---------|
+| fastapi | REST API framework |
+| uvicorn | ASGI server |
+| sib-api-v3-sdk | Brevo SMS/Email |
+| folium | Interactive maps |
+| plotly | Charts and dashboards |
+| pandas | Data processing |
+| meteofrance-api | Météo France API client |
 
 ---
 
-**Delivered by**: Vafa Bayat
-**Version**: 1.0
-**Date**: 2025-12-15
+**Version:** 2.1
+**Author:** Vafa Bayat
+**Last Updated:** 2025-12-18
