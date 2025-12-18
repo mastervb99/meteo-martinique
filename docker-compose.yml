@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  martinique-weather:
+    build: .
+    container_name: martinique-weather
+    restart: unless-stopped
+    environment:
+      - METEO_FRANCE_APP_ID=${METEO_FRANCE_APP_ID}
+      - METEO_FRANCE_API_KEY=${METEO_FRANCE_API_KEY}
+      - TZ=America/Martinique
+    volumes:
+      - ./output:/app/output
+      - ./.env:/app/.env:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import config; print('OK')"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+
+  # Optional: Run single extraction (use with docker-compose run)
+  extract:
+    build: .
+    container_name: martinique-weather-extract
+    environment:
+      - METEO_FRANCE_APP_ID=${METEO_FRANCE_APP_ID}
+      - METEO_FRANCE_API_KEY=${METEO_FRANCE_API_KEY}
+    volumes:
+      - ./output:/app/output
+      - ./.env:/app/.env:ro
+    command: ["python", "main.py", "--extract"]
+    profiles:
+      - tools
+
+  # Optional: Run demo mode
+  demo:
+    build: .
+    container_name: martinique-weather-demo
+    volumes:
+      - ./output:/app/output
+    command: ["python", "main.py", "--demo"]
+    profiles:
+      - tools
