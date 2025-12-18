@@ -22,5 +22,11 @@ RUN mkdir -p output/data output/maps output/charts
 ENV PYTHONUNBUFFERED=1
 ENV TZ=America/Martinique
 
-# Default command: run scheduler
-CMD ["python", "main.py", "--schedule"]
+# Copy static files
+COPY static/ ./static/
+
+# Expose port
+EXPOSE 8000
+
+# Run the API server (PORT provided by Render)
+CMD gunicorn api:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}
