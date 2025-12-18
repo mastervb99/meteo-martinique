@@ -21,14 +21,15 @@ import re
 
 from brevo_service import BrevoSMSService, BrevoEmailService, OTPService, AlertService
 from subscriptions import SubscriptionManager
+from config import OUTPUT_DIR, MAPS_DIR, CHARTS_DIR, DATA_DIR, MARTINIQUE
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Meteo Martinique - Alertes SMS & Email API",
-    description="API for SMS and Email weather alert subscriptions (powered by Brevo)",
-    version="2.0.0"
+    title="Meteo Martinique - Weather Dashboard & Alerts API",
+    description="Weather maps, charts, forecasts, and SMS/Email alert subscriptions",
+    version="2.1.0"
 )
 
 app.add_middleware(
@@ -382,6 +383,251 @@ async def get_profiles():
             "Tourisme / plages": "Conseils pour touristes et activités plage"
         }
     }
+
+
+# ============================================================================
+# WEATHER DATA API ENDPOINTS
+# ============================================================================
+
+@app.get("/api/weather/current")
+async def get_current_weather():
+    """Get current weather summary for Martinique."""
+    import json
+    import pandas as pd
+
+    result = {"cities": [], "vigilance": None, "updated_at": None}
+
+    # Load city forecasts
+    forecast_path = Path(DATA_DIR) / "city_forecasts.csv"
+    if forecast_path.exists():
+        df = pd.read_csv(forecast_path)
+        today_df = df.drop_duplicates(subset=["city"], keep="first")
+        result["cities"] = today_df.to_dict(orient="records")
+
+    # Load vigilance
+    vigilance_path = Path(DATA_DIR) / "vigilance_alerts.json"
+    if vigilance_path.exists():
+        with open(vigilance_path) as f:
+            result["vigilance"] = json.load(f)
+
+    result["martinique"] = MARTINIQUE
+    return result
+
+
+@app.get("/api/weather/forecast/{city}")
+async def get_city_forecast(city: str):
+    """Get 7-day forecast for a specific city."""
+    import pandas as pd
+
+    forecast_path = Path(DATA_DIR) / "city_forecasts.csv"
+    if not forecast_path.exists():
+        raise HTTPException(status_code=404, detail="Forecast data not available")
+
+    df = pd.read_csv(forecast_path)
+    city_df = df[df["city"].str.lower() == city.lower()]
+
+    if city_df.empty:
+        raise HTTPException(status_code=404, detail=f"City '{city}' not found")
+
+    return {"city": city, "forecasts": city_df.to_dict(orient="records")}
+
+
+@app.get("/api/weather/hourly/{city}")
+async def get_hourly_forecast(city: str):
+    """Get hourly forecast for a specific city."""
+    import pandas as pd
+
+    city_slug = city.lower().replace(" ", "_").replace("-", "_")
+    hourly_path = Path(DATA_DIR) / f"hourly_{city_slug}.csv"
+
+    if not hourly_path.exists():
+        # Try alternate naming
+        hourly_path = Path(DATA_DIR) / f"hourly_{city.lower().replace(' ', '-')}.csv"
+
+    if not hourly_path.exists():
+        raise HTTPException(status_code=404, detail=f"Hourly data not available for '{city}'")
+
+    df = pd.read_csv(hourly_path)
+    return {"city": city, "hourly": df.to_dict(orient="records")}
+
+
+@app.get("/api/weather/vigilance")
+async def get_vigilance():
+    """Get current vigilance alerts."""
+    import json
+
+    vigilance_path = Path(DATA_DIR) / "vigilance_alerts.json"
+    if not vigilance_path.exists():
+        return {"max_color": 1, "phenomenons": [], "message": "No vigilance data"}
+
+    with open(vigilance_path) as f:
+        return json.load(f)
+
+
+@app.get("/api/cities")
+async def get_cities():
+    """Get list of Martinique cities with coordinates."""
+    return {"cities": MARTINIQUE["major_cities"]}
+
+
+# ============================================================================
+# MAPS API ENDPOINTS
+# ============================================================================
+
+@app.get("/api/maps/vigilance")
+async def get_vigilance_map():
+    """Get vigilance map HTML."""
+    map_path = Path(MAPS_DIR) / "vigilance_map.html"
+    if not map_path.exists():
+        # Generate map on demand
+        from map_generator import MartiniqueMapGenerator
+        MartiniqueMapGenerator().generate_vigilance_map()
+
+    if map_path.exists():
+        return FileResponse(map_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail="Vigilance map not available")
+
+
+@app.get("/api/maps/forecast")
+async def get_forecast_map():
+    """Get forecast map HTML."""
+    map_path = Path(MAPS_DIR) / "forecast_map.html"
+    if not map_path.exists():
+        from map_generator import MartiniqueMapGenerator
+        MartiniqueMapGenerator().generate_forecast_map()
+
+    if map_path.exists():
+        return FileResponse(map_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail="Forecast map not available")
+
+
+@app.get("/api/maps/rain")
+async def get_rain_map():
+    """Get rain/precipitation map HTML."""
+    map_path = Path(MAPS_DIR) / "rain_map.html"
+    if not map_path.exists():
+        from map_generator import MartiniqueMapGenerator
+        MartiniqueMapGenerator().generate_rain_map()
+
+    if map_path.exists():
+        return FileResponse(map_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail="Rain map not available")
+
+
+# ============================================================================
+# CHARTS API ENDPOINTS
+# ============================================================================
+
+@app.get("/api/charts/temperature")
+async def get_temperature_chart():
+    """Get temperature forecast chart HTML."""
+    chart_path = Path(CHARTS_DIR) / "temperature_chart.html"
+    if not chart_path.exists():
+        from chart_generator import MartiniqueChartGenerator
+        MartiniqueChartGenerator().generate_temperature_chart()
+
+    if chart_path.exists():
+        return FileResponse(chart_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail="Temperature chart not available")
+
+
+@app.get("/api/charts/hourly/{city}")
+async def get_hourly_chart(city: str = "fort-de-france"):
+    """Get hourly dashboard chart for a city."""
+    city_slug = city.lower().replace(" ", "_").replace("-", "_")
+    chart_path = Path(CHARTS_DIR) / f"hourly_dashboard_{city_slug}.html"
+
+    if not chart_path.exists():
+        from chart_generator import MartiniqueChartGenerator
+        MartiniqueChartGenerator().generate_hourly_dashboard(city)
+
+    if chart_path.exists():
+        return FileResponse(chart_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail=f"Hourly chart not available for {city}")
+
+
+@app.get("/api/charts/comparison")
+async def get_comparison_chart():
+    """Get city comparison chart HTML."""
+    chart_path = Path(CHARTS_DIR) / "city_comparison.html"
+    if not chart_path.exists():
+        from chart_generator import MartiniqueChartGenerator
+        MartiniqueChartGenerator().generate_city_comparison()
+
+    if chart_path.exists():
+        return FileResponse(chart_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail="Comparison chart not available")
+
+
+@app.get("/api/charts/vigilance")
+async def get_vigilance_chart():
+    """Get vigilance gauge chart HTML."""
+    chart_path = Path(CHARTS_DIR) / "vigilance_gauge.html"
+    if not chart_path.exists():
+        from chart_generator import MartiniqueChartGenerator
+        MartiniqueChartGenerator().generate_vigilance_gauge()
+
+    if chart_path.exists():
+        return FileResponse(chart_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail="Vigilance chart not available")
+
+
+# ============================================================================
+# GENERATE DATA ON DEMAND
+# ============================================================================
+
+@app.post("/api/generate/demo")
+async def generate_demo_data():
+    """Generate demo data for testing."""
+    from main import generate_sample_data
+    from map_generator import MartiniqueMapGenerator
+    from chart_generator import MartiniqueChartGenerator
+
+    logger.info("Generating demo data...")
+    generate_sample_data(logger)
+
+    map_gen = MartiniqueMapGenerator()
+    map_results = map_gen.generate_all_maps()
+
+    chart_gen = MartiniqueChartGenerator()
+    chart_results = chart_gen.generate_all_charts()
+
+    return {
+        "success": True,
+        "maps": list(map_results.keys()),
+        "charts": list(chart_results.keys())
+    }
+
+
+# ============================================================================
+# PAGE ROUTES
+# ============================================================================
+
+@app.get("/aujourd-hui", response_class=HTMLResponse)
+async def page_aujourdhui():
+    """Today's weather page."""
+    html_path = STATIC_DIR / "aujourdhui.html"
+    if html_path.exists():
+        return FileResponse(html_path)
+    raise HTTPException(status_code=404, detail="Page not found")
+
+
+@app.get("/previsions", response_class=HTMLResponse)
+async def page_previsions():
+    """Forecasts page."""
+    html_path = STATIC_DIR / "previsions.html"
+    if html_path.exists():
+        return FileResponse(html_path)
+    raise HTTPException(status_code=404, detail="Page not found")
+
+
+@app.get("/cartes", response_class=HTMLResponse)
+async def page_cartes():
+    """Maps page."""
+    html_path = STATIC_DIR / "cartes.html"
+    if html_path.exists():
+        return FileResponse(html_path)
+    raise HTTPException(status_code=404, detail="Page not found")
 
 
 def run_server(host: str = "0.0.0.0", port: int = 8000):
