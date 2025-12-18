@@ -38,10 +38,13 @@ def init_database():
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS subscribers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                phone_number TEXT UNIQUE NOT NULL,
+                phone_number TEXT,
+                email TEXT,
                 profile TEXT NOT NULL DEFAULT 'Particulier',
                 reference_code TEXT UNIQUE NOT NULL,
+                notification_prefs TEXT DEFAULT 'sms',
                 verified BOOLEAN DEFAULT FALSE,
+                email_verified BOOLEAN DEFAULT FALSE,
                 active BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 verified_at TIMESTAMP,
@@ -56,14 +59,37 @@ def init_database():
                 message TEXT,
                 sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 delivery_status TEXT,
-                twilio_sid TEXT,
+                delivery_channel TEXT DEFAULT 'sms',
+                message_id TEXT,
                 FOREIGN KEY (subscriber_id) REFERENCES subscribers(id)
             );
 
             CREATE INDEX IF NOT EXISTS idx_phone ON subscribers(phone_number);
+            CREATE INDEX IF NOT EXISTS idx_email ON subscribers(email);
             CREATE INDEX IF NOT EXISTS idx_active ON subscribers(active, verified);
             CREATE INDEX IF NOT EXISTS idx_ref_code ON subscribers(reference_code);
         """)
+        # Migration: add new columns if they don't exist
+        try:
+            conn.execute("ALTER TABLE subscribers ADD COLUMN email TEXT")
+        except:
+            pass
+        try:
+            conn.execute("ALTER TABLE subscribers ADD COLUMN email_verified BOOLEAN DEFAULT FALSE")
+        except:
+            pass
+        try:
+            conn.execute("ALTER TABLE subscribers ADD COLUMN notification_prefs TEXT DEFAULT 'sms'")
+        except:
+            pass
+        try:
+            conn.execute("ALTER TABLE alert_history ADD COLUMN delivery_channel TEXT DEFAULT 'sms'")
+        except:
+            pass
+        try:
+            conn.execute("ALTER TABLE alert_history ADD COLUMN message_id TEXT")
+        except:
+            pass
         logger.info("Database initialized")
 
 
@@ -88,14 +114,18 @@ class SubscriptionManager:
 
     def create_subscription(
         self,
-        phone_number: str,
-        profile: str = "Particulier"
+        phone_number: Optional[str] = None,
+        email: Optional[str] = None,
+        profile: str = "Particulier",
+        notification_prefs: str = "sms"
     ) -> Dict[str, Any]:
         """Create new subscription (pending verification).
 
         Args:
             phone_number: Subscriber phone number (E.164 format)
+            email: Subscriber email address
             profile: Subscriber profile type
+            notification_prefs: 'sms', 'email', or 'both'
 
         Returns:
             Dictionary with subscription data or error
@@ -103,32 +133,55 @@ class SubscriptionManager:
         if profile not in self.PROFILES:
             profile = "Particulier"
 
-        phone = self._normalize_phone(phone_number)
-        if not phone:
-            return {"success": False, "error": "Invalid phone number"}
+        if notification_prefs not in ("sms", "email", "both"):
+            notification_prefs = "sms"
+
+        phone = self._normalize_phone(phone_number) if phone_number else None
+        email = email.strip().lower() if email else None
+
+        # Validate we have at least one contact method
+        if not phone and not email:
+            return {"success": False, "error": "Phone or email required"}
+
+        # Validate based on notification preference
+        if notification_prefs == "sms" and not phone:
+            return {"success": False, "error": "Phone required for SMS notifications"}
+        if notification_prefs == "email" and not email:
+            return {"success": False, "error": "Email required for email notifications"}
+        if notification_prefs == "both" and (not phone or not email):
+            return {"success": False, "error": "Both phone and email required"}
 
         ref_code = generate_reference_code()
 
         try:
             with get_db() as conn:
-                existing = conn.execute(
-                    "SELECT id, active, verified FROM subscribers WHERE phone_number = ?",
-                    (phone,)
-                ).fetchone()
+                # Check for existing by phone or email
+                existing = None
+                if phone:
+                    existing = conn.execute(
+                        "SELECT id, active, verified FROM subscribers WHERE phone_number = ?",
+                        (phone,)
+                    ).fetchone()
+                if not existing and email:
+                    existing = conn.execute(
+                        "SELECT id, active, verified FROM subscribers WHERE email = ?",
+                        (email,)
+                    ).fetchone()
 
                 if existing:
                     if existing["active"] and existing["verified"]:
                         return {
                             "success": False,
-                            "error": "Phone already subscribed",
+                            "error": "Already subscribed",
                             "subscriber_id": existing["id"]
                         }
                     conn.execute(
                         """UPDATE subscribers
                            SET profile = ?, active = TRUE, verified = FALSE,
-                               reference_code = ?, unsubscribed_at = NULL
-                           WHERE phone_number = ?""",
-                        (profile, ref_code, phone)
+                               reference_code = ?, unsubscribed_at = NULL,
+                               phone_number = ?, email = ?, notification_prefs = ?
+                           WHERE id = ?""",
+                        (profile, ref_code, phone, email, notification_prefs, existing["id"])
                     )
                     return {
                         "success": True,
@@ -138,9 +191,10 @@ class SubscriptionManager:
                     }
 
                 cursor = conn.execute(
-                    """INSERT INTO subscribers (phone_number, profile, reference_code)
-                       VALUES (?, ?, ?)""",
-                    (phone, profile, ref_code)
+                    """INSERT INTO subscribers
+                       (phone_number, email, profile, reference_code, notification_prefs)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (phone, email, profile, ref_code, notification_prefs)
                 )
                 return {
                     "success": True,
@@ -225,12 +279,14 @@ class SubscriptionManager:
     def get_subscriber(
         self,
         phone_number: Optional[str] = None,
+        email: Optional[str] = None,
         reference_code: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """Get subscriber details.
 
         Args:
             phone_number: Phone to look up
+            email: Email to look up
             reference_code: Reference code to look up
 
         Returns:
@@ -242,6 +298,11 @@ class SubscriptionManager:
                 row = conn.execute(
                     "SELECT * FROM subscribers WHERE phone_number = ?",
                     (phone,)
+                ).fetchone()
+            elif email:
+                row = conn.execute(
+                    "SELECT * FROM subscribers WHERE email = ?",
+                    (email.strip().lower(),)
                 ).fetchone()
             elif reference_code:
                 row = conn.execute(
@@ -293,7 +354,7 @@ class SubscriptionManager:
         """
         with get_db() as conn:
             rows = conn.execute(
-                """SELECT id, phone_number, profile, reference_code
+                """SELECT id, phone_number, email, profile, reference_code, notification_prefs
                    FROM subscribers
                    WHERE active = TRUE AND verified = TRUE"""
             ).fetchall()
@@ -306,7 +367,8 @@ class SubscriptionManager:
         color_code: int,
         message: str,
         delivery_status: str = "pending",
-        twilio_sid: Optional[str] = None
+        delivery_channel: str = "sms",
+        message_id: Optional[str] = None
     ):
         """Log sent alert to history.
 
@@ -316,14 +378,15 @@ class SubscriptionManager:
             color_code: Vigilance color code
             message: Message content
             delivery_status: Delivery status
-            twilio_sid: Twilio message SID
+            delivery_channel: 'sms' or 'email'
+            message_id: Provider message ID (Brevo)
         """
         with get_db() as conn:
             conn.execute(
                 """INSERT INTO alert_history
-                   (subscriber_id, phenomenon_type, color_code, message, delivery_status, twilio_sid)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                (subscriber_id, phenomenon_type, color_code, message, delivery_status, twilio_sid)
+                   (subscriber_id, phenomenon_type, color_code, message, delivery_status, delivery_channel, message_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (subscriber_id, phenomenon_type, color_code, message, delivery_status, delivery_channel, message_id)
             )
 
     def get_alert_history(

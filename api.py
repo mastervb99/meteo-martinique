@@ -1,10 +1,12 @@
-"""FastAPI REST API for SMS alert subscriptions.
+"""FastAPI REST API for SMS and Email alert subscriptions.
 
 Provides endpoints for:
-- OTP verification flow
+- OTP verification flow (SMS + Email)
 - Subscription management
 - Alert testing
 - Statistics
+
+Uses Brevo for SMS and Email delivery.
 """
 import logging
 from pathlib import Path
@@ -14,19 +16,19 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 import re
 
-from sms_service import SMSService, OTPService, AlertService
+from brevo_service import BrevoSMSService, BrevoEmailService, OTPService, AlertService
 from subscriptions import SubscriptionManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Météo Martinique - Alertes SMS API",
-    description="API for SMS weather alert subscriptions",
-    version="1.0.0"
+    title="Meteo Martinique - Alertes SMS & Email API",
+    description="API for SMS and Email weather alert subscriptions (powered by Brevo)",
+    version="2.0.0"
 )
 
 app.add_middleware(
@@ -37,27 +39,62 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-sms_service = SMSService()
-otp_service = OTPService(sms_service)
-alert_service = AlertService(sms_service)
+sms_service = BrevoSMSService()
+email_service = BrevoEmailService()
+otp_service = OTPService(sms_service, email_service)
+alert_service = AlertService(sms_service, email_service)
 subscription_manager = SubscriptionManager()
 
 STATIC_DIR = Path(__file__).parent / "static"
 STATIC_DIR.mkdir(exist_ok=True)
 
 
-class PhoneRequest(BaseModel):
-    """Request model with phone number."""
-    phone: str
+class SubscribeRequest(BaseModel):
+    """Request model for subscription."""
+    phone: Optional[str] = None
+    email: Optional[str] = None
     profile: Optional[str] = "Particulier"
+    notification_prefs: Optional[str] = "sms"
 
     @field_validator('phone')
     @classmethod
     def validate_phone(cls, v):
+        if v is None or v == "":
+            return None
         cleaned = ''.join(c for c in v if c.isdigit() or c == '+')
         if len(cleaned) < 10:
             raise ValueError('Invalid phone number')
         return cleaned
+
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v):
+        if v is None or v == "":
+            return None
+        if '@' not in v or '.' not in v:
+            raise ValueError('Invalid email address')
+        return v.strip().lower()
+
+    @field_validator('notification_prefs')
+    @classmethod
+    def validate_prefs(cls, v):
+        if v not in ('sms', 'email', 'both'):
+            return 'sms'
+        return v
+
+    @model_validator(mode='after')
+    def check_contact_method(self):
+        if self.notification_prefs == 'sms' and not self.phone:
+            raise ValueError('Phone required for SMS notifications')
+        if self.notification_prefs == 'email' and not self.email:
+            raise ValueError('Email required for email notifications')
+        if self.notification_prefs == 'both' and (not self.phone or not self.email):
+            raise ValueError('Both phone and email required')
+        return self
+
+
+# Alias for backward compatibility
+PhoneRequest = SubscribeRequest
 
 
 class OTPVerifyRequest(BaseModel):
@@ -100,33 +137,40 @@ async def health():
 
 
 @app.post("/api/otp/send")
-async def send_otp(request: PhoneRequest):
-    """Send OTP verification code.
+async def send_otp(request: SubscribeRequest):
+    """Send OTP verification code via SMS and/or Email.
 
     Step 1 of double validation flow.
     """
     result = subscription_manager.create_subscription(
         phone_number=request.phone,
-        profile=request.profile
+        email=request.email,
+        profile=request.profile,
+        notification_prefs=request.notification_prefs
     )
 
     if not result["success"]:
-        if "already subscribed" in result.get("error", ""):
+        if "already subscribed" in result.get("error", "").lower():
             raise HTTPException(status_code=409, detail=result["error"])
         raise HTTPException(status_code=400, detail=result.get("error", "Failed to create subscription"))
 
-    otp_result = otp_service.send_otp(request.phone)
+    otp_result = otp_service.send_otp(
+        phone_number=request.phone,
+        email=request.email,
+        channel=request.notification_prefs
+    )
 
     if not otp_result["success"]:
         return {
             "success": False,
             "error": otp_result.get("error", "Failed to send OTP"),
-            "demo_mode": not sms_service.is_configured()
+            "demo_mode": not sms_service.is_configured() and not email_service.is_configured()
         }
 
     return {
         "success": True,
         "message": "Verification code sent",
+        "channels": otp_result.get("channels", []),
         "expires_in": otp_result.get("expires_in", 10),
         "reference_code": result.get("reference_code")
     }
@@ -157,55 +201,89 @@ async def verify_otp(request: OTPVerifyRequest):
 
 
 @app.post("/api/subscribe/confirm")
-async def confirm_subscription(request: PhoneRequest):
-    """Confirm subscription and send welcome SMS.
+async def confirm_subscription(request: SubscribeRequest):
+    """Confirm subscription and send welcome message.
 
-    Step 2 of double validation flow - sends activation SMS.
+    Step 2 of double validation flow - sends activation SMS/Email.
     """
-    subscriber = subscription_manager.get_subscriber(phone_number=request.phone)
+    subscriber = None
+    if request.phone:
+        subscriber = subscription_manager.get_subscriber(phone_number=request.phone)
+    if not subscriber and request.email:
+        subscriber = subscription_manager.get_subscriber(email=request.email)
 
     if not subscriber:
         raise HTTPException(status_code=404, detail="Subscription not found")
 
     if not subscriber["verified"]:
-        raise HTTPException(status_code=400, detail="Phone not verified - complete OTP first")
+        raise HTTPException(status_code=400, detail="Not verified - complete OTP first")
 
     if not subscriber["active"]:
         raise HTTPException(status_code=400, detail="Subscription is inactive")
 
-    result = alert_service.send_welcome(request.phone, subscriber["profile"])
+    notification_prefs = subscriber.get("notification_prefs", "sms")
+    result = alert_service.send_welcome(
+        phone_number=subscriber.get("phone_number"),
+        email=subscriber.get("email"),
+        profile=subscriber["profile"],
+        notification_prefs=notification_prefs
+    )
 
     return {
         "success": result["success"],
-        "message": "Subscription confirmed - welcome SMS sent" if result["success"] else "Failed to send welcome SMS",
+        "message": f"Subscription confirmed - welcome sent via {notification_prefs}" if result["success"] else "Failed to send welcome",
         "reference_code": subscriber["reference_code"],
-        "profile": subscriber["profile"]
+        "profile": subscriber["profile"],
+        "notification_prefs": notification_prefs
     }
 
 
 @app.post("/api/subscribe/test")
-async def send_test_alert(request: PhoneRequest):
-    """Send test alert to subscriber."""
-    subscriber = subscription_manager.get_subscriber(phone_number=request.phone)
+async def send_test_alert(request: SubscribeRequest):
+    """Send test alert to subscriber via configured channel(s)."""
+    subscriber = None
+    if request.phone:
+        subscriber = subscription_manager.get_subscriber(phone_number=request.phone)
+    if not subscriber and request.email:
+        subscriber = subscription_manager.get_subscriber(email=request.email)
 
     if not subscriber or not subscriber["active"] or not subscriber["verified"]:
         raise HTTPException(status_code=404, detail="Active verified subscription not found")
 
-    result = alert_service.send_test_alert(request.phone, subscriber["profile"])
+    notification_prefs = subscriber.get("notification_prefs", "sms")
+    result = alert_service.send_test_alert(
+        phone_number=subscriber.get("phone_number"),
+        email=subscriber.get("email"),
+        profile=subscriber["profile"],
+        notification_prefs=notification_prefs
+    )
 
     if result["success"]:
-        subscription_manager.log_alert(
-            subscriber_id=subscriber["id"],
-            phenomenon_type="Test",
-            color_code=2,
-            message="Test alert",
-            delivery_status="sent",
-            twilio_sid=result.get("sid")
-        )
+        # Log for each channel
+        if result.get("sms") and result["sms"].get("success"):
+            subscription_manager.log_alert(
+                subscriber_id=subscriber["id"],
+                phenomenon_type="Test",
+                color_code=2,
+                message="Test alert",
+                delivery_status="sent",
+                delivery_channel="sms",
+                message_id=result["sms"].get("message_id")
+            )
+        if result.get("email") and result["email"].get("success"):
+            subscription_manager.log_alert(
+                subscriber_id=subscriber["id"],
+                phenomenon_type="Test",
+                color_code=2,
+                message="Test alert",
+                delivery_status="sent",
+                delivery_channel="email",
+                message_id=result["email"].get("message_id")
+            )
 
     return {
         "success": result["success"],
-        "message": "Test alert sent" if result["success"] else result.get("error")
+        "message": f"Test alert sent via {notification_prefs}" if result["success"] else "Failed to send test alert"
     }
 
 
@@ -220,6 +298,7 @@ async def get_subscription(reference_code: str):
     return {
         "reference_code": subscriber["reference_code"],
         "profile": subscriber["profile"],
+        "notification_prefs": subscriber.get("notification_prefs", "sms"),
         "active": subscriber["active"],
         "verified": subscriber["verified"],
         "created_at": subscriber["created_at"]

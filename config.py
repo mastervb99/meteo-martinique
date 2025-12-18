@@ -8,7 +8,13 @@ load_dotenv()
 METEO_FRANCE_APP_ID = os.getenv("METEO_FRANCE_APP_ID", "")
 METEO_FRANCE_API_KEY = os.getenv("METEO_FRANCE_API_KEY", "")
 
-# Twilio SMS credentials
+# Brevo SMS + Email credentials (replaces Twilio)
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "alertes@meteo-martinique.fr")
+BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "Meteo Martinique")
+BREVO_SMS_SENDER = os.getenv("BREVO_SMS_SENDER", "MeteoMQ")  # 11 char max for SMS sender
+
+# Legacy Twilio (deprecated - kept for migration)
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
 TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "")

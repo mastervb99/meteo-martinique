@@ -150,7 +150,11 @@
           </div>
           <div class="grid2">
             <div class="field"><div class="label">Numéro de téléphone</div><input id="phone" class="control" type="tel" placeholder="Ex : +596 696 12 34 56" autocomplete="tel" inputmode="tel"><div class="help">Format conseillé : +596 … (Martinique).</div></div>
+            <div class="field"><div class="label">Email (optionnel)</div><input id="email" class="control" type="email" placeholder="votre@email.fr" autocomplete="email"><div class="help">Pour recevoir les alertes par email.</div></div>
+          </div>
+          <div class="grid2">
             <div class="field"><div class="label">Profil</div><select id="profile" class="control" aria-label="Profil"><option>Particulier</option><option>Professionnel (BTP / agriculture)</option><option>Nautique / pêche / plaisance</option><option>Tourisme / plages</option></select><div class="help">Le profil adapte le contenu des conseils.</div></div>
+            <div class="field"><div class="label">Notifications</div><select id="notifPref" class="control" aria-label="Type de notification"><option value="sms">SMS uniquement</option><option value="email">Email uniquement</option><option value="both">SMS + Email</option></select><div class="help">Choisissez comment recevoir les alertes.</div></div>
           </div>
           <div class="divider"></div>
           <div class="field"><div class="label">Code de vérification (SMS #1)</div>
@@ -228,7 +232,8 @@
   const API_BASE = '/api';
   const $ = (id) => document.getElementById(id);
 
-  const phone = $("phone"), profile = $("profile"), otp = $("otp"), consent = $("consent");
+  const phone = $("phone"), email = $("email"), profile = $("profile"), notifPref = $("notifPref");
+  const otp = $("otp"), consent = $("consent");
   const sendCode = $("sendCode"), verifyCode = $("verifyCode"), resendCode = $("resendCode");
   const confirmSub = $("confirmSub"), testAlert = $("testAlert");
   const toast = $("toast"), otpHelp = $("otpHelp"), refCodeDisplay = $("refCodeDisplay");
@@ -240,12 +245,26 @@
   let resendTimer = null, resendLeft = 0;
 
   function normalizePhone(val){ return (val || "").trim().replace(/\s+/g, " "); }
+  function normalizeEmail(val){ return (val || "").trim().toLowerCase(); }
   function isPhoneLikelyValid(val){
     const v = (val || "").replace(/\s+/g,"");
     if (!v) return false;
     if (v.startsWith("+") && v.length >= 10) return true;
     if (/^0\d{9}$/.test(v)) return true;
     return v.length >= 10;
+  }
+  function isEmailLikelyValid(val){
+    const v = (val || "").trim();
+    return v.includes("@") && v.includes(".");
+  }
+  function isContactValid(){
+    const pref = notifPref.value;
+    const phoneOk = isPhoneLikelyValid(normalizePhone(phone.value));
+    const emailOk = isEmailLikelyValid(normalizeEmail(email.value));
+    if (pref === "sms") return phoneOk;
+    if (pref === "email") return emailOk;
+    if (pref === "both") return phoneOk && emailOk;
+    return phoneOk;
   }
 
   function showToast(type, msg){ toast.className = "toast " + type; toast.textContent = msg; }
@@ -267,9 +286,9 @@
   }
 
   function updateButtons(){
-    const pOk = isPhoneLikelyValid(normalizePhone(phone.value));
-    sendCode.disabled = !pOk;
-    verifyCode.disabled = !(pOk && otp.value.trim().length === 6 && otpSent);
+    const contactOk = isContactValid();
+    sendCode.disabled = !contactOk;
+    verifyCode.disabled = !(contactOk && otp.value.trim().length === 6 && otpSent);
     confirmSub.disabled = !(otpVerified && consent.checked);
     testAlert.disabled = !(otpVerified && consent.checked);
   }
@@ -286,15 +305,22 @@
   async function handleSendOtp(){
     clearToast();
     const p = normalizePhone(phone.value);
-    if (!isPhoneLikelyValid(p)){ showToast("err", "Numéro invalide."); return; }
+    const e = normalizeEmail(email.value);
+    const pref = notifPref.value;
+
+    if (!isContactValid()){ showToast("err", "Contact invalide pour le type de notification choisi."); return; }
     sendCode.disabled = true;
     try {
-      const data = await apiCall('/otp/send', 'POST', { phone: p, profile: profile.value });
+      const payload = { profile: profile.value, notification_prefs: pref };
+      if (p) payload.phone = p;
+      if (e) payload.email = e;
+      const data = await apiCall('/otp/send', 'POST', payload);
       otpSent = true; otpVerified = false;
       referenceCode = data.reference_code;
       otp.disabled = false; otp.value = ""; otp.focus();
-      otpHelp.innerHTML = `Code envoyé au <b>${p}</b>. Saisissez-le pour continuer.`;
-      showToast("info", "SMS #1 envoyé (code de vérification).");
+      const channels = data.channels || [pref];
+      otpHelp.innerHTML = `Code envoyé via <b>${channels.join(' + ')}</b>. Saisissez-le pour continuer.`;
+      showToast("info", `Code envoyé via ${channels.join(' + ')}.`);
       if (referenceCode) refCodeDisplay.textContent = `Référence: ${referenceCode}`;
       startResendCountdown(60);
       markStepDone(step1, false); markStepDone(step2, false); setStep(1);
@@ -305,32 +331,42 @@
   async function handleVerifyOtp(){
     clearToast();
     const p = normalizePhone(phone.value);
+    const e = normalizeEmail(email.value);
     try {
-      const data = await apiCall('/otp/verify', 'POST', { phone: p, otp: otp.value.trim() });
+      const data = await apiCall('/otp/verify', 'POST', { phone: p || e, otp: otp.value.trim() });
       otpVerified = true;
-      showToast("ok", "Numéro vérifié ✅ Vous pouvez confirmer l'abonnement.");
+      showToast("ok", "Vérifié ✅ Vous pouvez confirmer l'abonnement.");
       markStepDone(step1, true); setStep(2);
-    } catch(e){ otpVerified = false; showToast("err", e.message); }
+    } catch(err){ otpVerified = false; showToast("err", err.message); }
     updateButtons();
   }
 
   async function handleConfirmSubscription(){
     clearToast();
     const p = normalizePhone(phone.value);
+    const e = normalizeEmail(email.value);
+    const pref = notifPref.value;
     try {
-      const data = await apiCall('/subscribe/confirm', 'POST', { phone: p, profile: profile.value });
-      showToast("ok", `Abonnement confirmé ✅ SMS #2 (activation) envoyé. Ref: ${data.reference_code || referenceCode}`);
+      const payload = { profile: profile.value, notification_prefs: pref };
+      if (p) payload.phone = p;
+      if (e) payload.email = e;
+      const data = await apiCall('/subscribe/confirm', 'POST', payload);
+      showToast("ok", `Abonnement confirmé ✅ Message d'activation envoyé. Ref: ${data.reference_code || referenceCode}`);
       markStepDone(step2, true);
-    } catch(e){ showToast("err", e.message); }
+    } catch(err){ showToast("err", err.message); }
   }
 
   async function handleTestAlert(){
     clearToast();
     const p = normalizePhone(phone.value);
+    const e = normalizeEmail(email.value);
+    const payload = {};
+    if (p) payload.phone = p;
+    if (e) payload.email = e;
     try {
-      await apiCall('/subscribe/test', 'POST', { phone: p });
-      showToast("info", "Test envoyé ! Vérifiez votre téléphone.");
-    } catch(e){ showToast("err", e.message); }
+      await apiCall('/subscribe/test', 'POST', payload);
+      showToast("info", "Test envoyé ! Vérifiez vos messages.");
+    } catch(err){ showToast("err", err.message); }
   }
 
   async function handleUnsubscribe(){
@@ -340,10 +376,12 @@
     try {
       await apiCall('/subscribe/unsubscribe', 'DELETE', { phone: p || null, reference_code: ref || null });
       showManageToast("ok", "Désabonné avec succès.");
-    } catch(e){ showManageToast("err", e.message); }
+    } catch(err){ showManageToast("err", err.message); }
   }
 
   phone.addEventListener("input", () => { clearToast(); updateButtons(); });
+  email.addEventListener("input", () => { clearToast(); updateButtons(); });
+  notifPref.addEventListener("change", () => { clearToast(); updateButtons(); });
   otp.addEventListener("input", () => { otp.value = otp.value.replace(/\D/g, "").slice(0,6); updateButtons(); });
   consent.addEventListener("change", updateButtons);
   sendCode.addEventListener("click", handleSendOtp);

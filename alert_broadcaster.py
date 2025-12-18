@@ -1,7 +1,9 @@
 """Alert broadcaster for sending weather alerts to all subscribers.
 
-Monitors vigilance alerts and broadcasts SMS to all active subscribers
+Monitors vigilance alerts and broadcasts SMS/Email to all active subscribers
 when vigilance levels change to Yellow (2) or higher.
+
+Uses Brevo for SMS and Email delivery.
 """
 import json
 import logging
@@ -10,21 +12,22 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 from config import DATA_DIR, VIGILANCE_COLORS, PHENOMENON_TYPES
-from sms_service import SMSService, AlertService
+from brevo_service import BrevoSMSService, BrevoEmailService, AlertService
 from subscriptions import SubscriptionManager
 
 logger = logging.getLogger(__name__)
 
 
 class AlertBroadcaster:
-    """Broadcasts weather alerts to all active subscribers."""
+    """Broadcasts weather alerts to all active subscribers via SMS and/or Email."""
 
     ALERT_THRESHOLD = 2  # Yellow or higher
 
     def __init__(self):
-        """Initialize broadcaster with services."""
-        self.sms_service = SMSService()
-        self.alert_service = AlertService(self.sms_service)
+        """Initialize broadcaster with Brevo services."""
+        self.sms_service = BrevoSMSService()
+        self.email_service = BrevoEmailService()
+        self.alert_service = AlertService(self.sms_service, self.email_service)
         self.subscription_manager = SubscriptionManager()
         self._last_alert_state: Dict[str, int] = {}
 
@@ -79,7 +82,7 @@ class AlertBroadcaster:
         description: str = "",
         intensity: str = ""
     ) -> Dict[str, Any]:
-        """Broadcast alert to all active subscribers.
+        """Broadcast alert to all active subscribers via their preferred channels.
 
         Args:
             phenomenon: Phenomenon data dictionary
@@ -98,47 +101,69 @@ class AlertBroadcaster:
         phenomenon_type = phenomenon.get("type", "Unknown")
         color_code = phenomenon.get("color_code", 2)
 
-        results = {"sent": 0, "failed": 0, "errors": []}
+        results = {"sms_sent": 0, "email_sent": 0, "failed": 0, "errors": []}
 
         logger.info(f"Broadcasting {phenomenon_type} alert to {len(subscribers)} subscribers")
 
         for subscriber in subscribers:
             try:
+                notification_prefs = subscriber.get("notification_prefs", "sms")
                 result = self.alert_service.send_alert(
-                    phone_number=subscriber["phone_number"],
+                    phone_number=subscriber.get("phone_number"),
+                    email=subscriber.get("email"),
                     phenomenon_type=phenomenon_type,
                     color_code=color_code,
                     profile=subscriber["profile"],
+                    notification_prefs=notification_prefs,
                     description=description,
                     intensity=intensity
                 )
 
                 if result["success"]:
-                    results["sent"] += 1
-                    self.subscription_manager.log_alert(
-                        subscriber_id=subscriber["id"],
-                        phenomenon_type=phenomenon_type,
-                        color_code=color_code,
-                        message=f"Alert: {phenomenon_type}",
-                        delivery_status="sent",
-                        twilio_sid=result.get("sid")
-                    )
+                    # Log SMS delivery
+                    if result.get("sms") and result["sms"].get("success"):
+                        results["sms_sent"] += 1
+                        self.subscription_manager.log_alert(
+                            subscriber_id=subscriber["id"],
+                            phenomenon_type=phenomenon_type,
+                            color_code=color_code,
+                            message=f"Alert: {phenomenon_type}",
+                            delivery_status="sent",
+                            delivery_channel="sms",
+                            message_id=result["sms"].get("message_id")
+                        )
+                    # Log Email delivery
+                    if result.get("email") and result["email"].get("success"):
+                        results["email_sent"] += 1
+                        self.subscription_manager.log_alert(
+                            subscriber_id=subscriber["id"],
+                            phenomenon_type=phenomenon_type,
+                            color_code=color_code,
+                            message=f"Alert: {phenomenon_type}",
+                            delivery_status="sent",
+                            delivery_channel="email",
+                            message_id=result["email"].get("message_id")
+                        )
                 else:
                     results["failed"] += 1
+                    identifier = subscriber.get("phone_number", subscriber.get("email", "unknown"))
                     results["errors"].append({
-                        "phone": subscriber["phone_number"][:8] + "***",
-                        "error": result.get("error")
+                        "subscriber": identifier[:8] + "***" if identifier else "unknown",
+                        "error": "Send failed"
                     })
 
             except Exception as e:
                 results["failed"] += 1
+                identifier = subscriber.get("phone_number", subscriber.get("email", "unknown"))
                 results["errors"].append({
-                    "phone": subscriber["phone_number"][:8] + "***",
+                    "subscriber": identifier[:8] + "***" if identifier else "unknown",
                     "error": str(e)
                 })
                 logger.error(f"Failed to send alert to subscriber {subscriber['id']}: {e}")
 
-        logger.info(f"Broadcast complete: {results['sent']} sent, {results['failed']} failed")
+        total_sent = results["sms_sent"] + results["email_sent"]
+        logger.info(f"Broadcast complete: {results['sms_sent']} SMS, {results['email_sent']} emails, {results['failed']} failed")
+        results["sent"] = total_sent
         return results
 
     def check_and_broadcast(self) -> Dict[str, Any]:

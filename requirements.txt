@@ -11,7 +11,10 @@ python-dotenv==1.2.1
 typer==0.20.0
 rich==14.2.0
 
-# SMS alerts
+# SMS & Email alerts (Brevo)
+sib-api-v3-sdk>=7.6.0
+
+# Legacy SMS (Twilio - deprecated, kept for migration)
 twilio==9.3.0
 fastapi==0.115.0
 uvicorn==0.32.0
