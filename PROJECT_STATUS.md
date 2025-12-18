@@ -1,11 +1,11 @@
 # Project Status: Martinique Weather Dashboard
 
-**Last Updated:** 2025-12-17 16:00 PST
+**Last Updated:** 2025-12-17 17:15 PST
 **Upwork Job:** Météo France API weather data extraction and visualization for Martinique
 **Client:** Remi (amateur weather enthusiast, passionate about Martinique)
-**Status:** IN PROGRESS - SMS Alert System Integrated, Awaiting Proposal Acceptance
+**Status:** DEPLOYED - SMS Alert System Live on Render, Awaiting Feedback
 **Price:** $50 agreed (+ excellent review + future work commitment)
-**Version:** 1.1
+**Version:** 1.2
 
 ---
 
@@ -13,22 +13,31 @@
 
 Weather data extraction and visualization system for Martinique using Météo France API. Now includes full SMS alert subscription system with Twilio integration.
 
-### Latest Update (2025-12-17 16:00)
+### Latest Update (2025-12-17 17:15)
 
-**SMS Alert System Integration Complete**
+**DEPLOYED TO RENDER**
 
-Remi sent `alerte.rar` containing `alerte.html` - a UI mockup for SMS weather alert subscriptions. Full backend integration completed:
+Live URL: **https://meteo-martinique.onrender.com**
 
-- FastAPI REST API for OTP verification and subscription management
-- Twilio SMS service with profile-based alert templates
-- SQLite database for subscriber storage
-- Alert broadcaster connected to vigilance scheduler
-- Frontend connected to real API endpoints (replacing simulated demo)
+GitHub Repo: **https://github.com/mastervb99/meteo-martinique**
 
-**Message sent to Remi (French):**
-> Merci pour alerte.html! J'ai intégré le système complet: backend FastAPI avec endpoints OTP/subscription, service SMS Twilio avec templates par profil, SQLite pour les abonnés, et broadcaster connecté au scheduler vigilance. Le frontend est maintenant connecté aux vrais endpoints API au lieu des simulations. Il suffit de configurer les credentials Twilio dans .env et lancer `python main.py api`. N'oublie pas d'accepter la proposition! Des customisations souhaitées (pricing, phénomènes, templates SMS)?
+Deployment completed:
+- Initialized git repository
+- Created GitHub repo (mastervb99/meteo-martinique)
+- Deployed to Render.com (free tier)
+- Fixed Dockerfile to run API server instead of scheduler
+- SMS alerts subscription page is live and functional
 
-**Pending:** Awaiting Remy to accept proposal and provide Twilio credentials or preferences.
+**Current Status:**
+- SMS Alert subscription page: LIVE
+- Weather dashboard pages: NOT YET BUILT (Phase 2)
+- Nav links (Aujourd'hui, Prévisions, Cartes): Placeholder only
+
+**Message sent to Remi:**
+> J'ai mis en ligne une première version: https://meteo-martinique.onrender.com
+> C'est le système d'abonnement aux alertes SMS. Le tableau de bord météo complet est la prochaine étape.
+
+**Awaiting:** Remi's feedback before proceeding to Phase 2 (full weather dashboard).
 
 ---
 
@@ -207,11 +216,183 @@ martinique_weather/
 
 ## Next Steps
 
-1. **Awaiting Remi** - Accept Upwork proposal
-2. **Twilio Setup** - Remi needs to create Twilio account and provide credentials
-3. **Customization** - Any changes to pricing, phenomena, SMS templates?
-4. **Deployment** - Deploy API to Render.com or o2switch
-5. **Testing** - End-to-end testing with real phone numbers
+1. **Awaiting Remi's Feedback** - On deployed SMS alerts page
+2. **Phase 2: Weather Dashboard** - Build full dashboard pages (see plan below)
+3. **Twilio Setup** - Remi needs to create Twilio account and provide credentials
+4. **Final Deployment** - Move to o2switch if needed for production
+
+---
+
+## Phase 2 Plan: Full Weather Dashboard (PENDING APPROVAL)
+
+### Overview
+
+Build complete weather dashboard with 4 main pages accessible via navigation:
+
+| Page | Route | Description |
+|------|-------|-------------|
+| Aujourd'hui | `/` or `/today` | Current conditions + 24h forecast |
+| Prévisions | `/forecast` | 7-day forecast for all cities |
+| Cartes | `/maps` | Interactive vigilance & weather maps |
+| Alertes | `/alerts` | SMS subscription (already done) |
+
+### Phase 2.1: Backend API Endpoints
+
+New endpoints to add to `api.py`:
+
+```
+GET /api/weather/current          # Current conditions for Fort-de-France
+GET /api/weather/hourly           # 48-hour hourly forecast
+GET /api/weather/forecast         # 7-day forecast all cities
+GET /api/weather/vigilance        # Current vigilance alerts
+GET /api/weather/rain             # Rain radar data
+GET /api/maps/vigilance           # Embedded vigilance map HTML
+GET /api/maps/forecast            # Embedded forecast map HTML
+GET /api/charts/temperature       # Temperature trend chart
+GET /api/charts/hourly            # Hourly dashboard chart
+```
+
+### Phase 2.2: Frontend Pages
+
+**Option A: Jinja2 Templates (Server-rendered)**
+- Simple, fast to implement
+- Single codebase
+- Good for SEO
+
+**Option B: Static HTML + JavaScript (Like alerte.html)**
+- Consistent with existing page style
+- API-driven, modern feel
+- More interactive
+
+**Recommendation:** Option B (matches Remi's design style)
+
+### Phase 2.3: Page Designs
+
+#### Page 1: Aujourd'hui (Today)
+```
+┌─────────────────────────────────────────────────────────┐
+│ Header (same as alerte.html)                            │
+├─────────────────────────────────────────────────────────┤
+│ ┌─────────────────┐ ┌─────────────────────────────────┐ │
+│ │ Current Weather │ │ Vigilance Status                │ │
+│ │ Fort-de-France  │ │ Wind: 🟢  Rain: 🟡  Waves: 🟢  │ │
+│ │ 28°C Ensoleillé │ │                                 │ │
+│ │ Humidity: 78%   │ │                                 │ │
+│ │ Wind: 25 km/h   │ │                                 │ │
+│ └─────────────────┘ └─────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ 24-Hour Forecast Chart (Plotly embedded)            │ │
+│ └─────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ Hourly Breakdown (scrollable cards)                 │ │
+│ │ 14:00  15:00  16:00  17:00  18:00  19:00 ...       │ │
+│ └─────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Page 2: Prévisions (7-Day Forecast)
+```
+┌─────────────────────────────────────────────────────────┐
+│ Header                                                  │
+├─────────────────────────────────────────────────────────┤
+│ City Selector: [Fort-de-France ▼]                       │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ 7-Day Cards                                         │ │
+│ │ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐   │ │
+│ │ │ Lun │ │ Mar │ │ Mer │ │ Jeu │ │ Ven │ │ Sam │   │ │
+│ │ │ ☀️  │ │ ⛅  │ │ 🌧️  │ │ ☀️  │ │ ☀️  │ │ ⛈️  │   │ │
+│ │ │28/24│ │27/23│ │26/23│ │29/24│ │30/25│ │27/23│   │ │
+│ │ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘   │ │
+│ └─────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ Temperature Trend Chart (7 days)                    │ │
+│ └─────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ All Cities Table                                    │ │
+│ │ City          | Today | Tomorrow | Precipitation   │ │
+│ │ Fort-de-France| 28°C  | 27°C     | 20%            │ │
+│ │ Le Lamentin   | 29°C  | 28°C     | 15%            │ │
+│ └─────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Page 3: Cartes (Maps)
+```
+┌─────────────────────────────────────────────────────────┐
+│ Header                                                  │
+├─────────────────────────────────────────────────────────┤
+│ Map Type: [Vigilance ▼] [Températures] [Précipitations] │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │                                                     │ │
+│ │              Folium Map (iframe)                    │ │
+│ │              Full Martinique view                   │ │
+│ │              Interactive markers                    │ │
+│ │                                                     │ │
+│ └─────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ Legend + Map Controls                               │ │
+│ └─────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Phase 2.4: Implementation Steps
+
+1. **Create page templates** (static/today.html, forecast.html, maps.html)
+2. **Add API routes** for weather data endpoints
+3. **Integrate existing generators** (map_generator, chart_generator) with API
+4. **Connect frontend** to API with JavaScript fetch calls
+5. **Update navigation** links in all pages
+6. **Add data caching** to reduce API calls
+7. **Test all pages** with demo and live data
+8. **Deploy update** to Render
+
+### Phase 2.5: Data Flow
+
+```
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│ Météo France API │────▶│ weather_extractor│────▶│ JSON/CSV Cache   │
+└──────────────────┘     └──────────────────┘     └──────────────────┘
+                                                          │
+                                                          ▼
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│ Frontend Pages   │◀────│ FastAPI Routes   │◀────│ Generators       │
+│ (HTML + JS)      │     │ /api/weather/*   │     │ (maps, charts)   │
+└──────────────────┘     └──────────────────┘     └──────────────────┘
+```
+
+### Phase 2.6: Estimated New Files
+
+| File | Purpose |
+|------|---------|
+| `static/index.html` | Today page (redirect or main) |
+| `static/today.html` | Current conditions page |
+| `static/forecast.html` | 7-day forecast page |
+| `static/maps.html` | Interactive maps page |
+| `static/css/style.css` | Shared styles (extracted from alerte.html) |
+| `static/js/api.js` | Shared API client functions |
+
+### Phase 2.7: Dependencies
+
+No new dependencies required - uses existing:
+- FastAPI (routing)
+- Folium (maps)
+- Plotly (charts)
+- Pandas (data processing)
+
+### Timeline Estimate
+
+- Phase 2.1 (API): 2-3 hours
+- Phase 2.2-2.3 (Frontend): 4-6 hours
+- Phase 2.4-2.5 (Integration): 2-3 hours
+- Phase 2.6 (Testing/Deploy): 1-2 hours
+
+**Total: ~10-15 hours**
+
+### Awaiting
+
+- Remi's approval to proceed
+- Any design preferences or changes
+- Priority order of pages
 
 ---
 
@@ -262,6 +443,16 @@ python main.py api
 - Client sent `alerte.rar` with SMS alert mockup
 - Full backend integration completed
 - Sent message asking for proposal acceptance and customization preferences
+
+### 2025-12-17 (Evening)
+- Client sent contract and asked to deploy online
+- Created GitHub repo: mastervb99/meteo-martinique
+- Deployed to Render: https://meteo-martinique.onrender.com
+- Fixed Dockerfile (was running scheduler instead of API)
+- SMS alerts page now live
+- Sent deployment link to Remi (EN/FR)
+- Created Phase 2 plan for full weather dashboard
+- Awaiting Remi's feedback before proceeding
 
 ---
 
