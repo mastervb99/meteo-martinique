@@ -436,13 +436,14 @@ async def get_city_forecast(city: str):
 async def get_hourly_forecast(city: str):
     """Get hourly forecast for a specific city."""
     import pandas as pd
+    import unicodedata
 
-    city_slug = city.lower().replace(" ", "_").replace("-", "_")
+    # Normalize city name (remove accents, lowercase, hyphens)
+    city_normalized = unicodedata.normalize('NFD', city)
+    city_normalized = ''.join(c for c in city_normalized if unicodedata.category(c) != 'Mn')
+    city_slug = city_normalized.lower().replace(' ', '-')
+
     hourly_path = Path(DATA_DIR) / f"hourly_{city_slug}.csv"
-
-    if not hourly_path.exists():
-        # Try alternate naming
-        hourly_path = Path(DATA_DIR) / f"hourly_{city.lower().replace(' ', '-')}.csv"
 
     if not hourly_path.exists():
         raise HTTPException(status_code=404, detail=f"Hourly data not available for '{city}'")
@@ -531,10 +532,18 @@ async def get_temperature_chart():
     raise HTTPException(status_code=404, detail="Temperature chart not available")
 
 
+def _normalize_city_name(name: str) -> str:
+    """Normalize city name for filename (remove accents, lowercase, hyphens)."""
+    import unicodedata
+    name = unicodedata.normalize('NFD', name)
+    name = ''.join(c for c in name if unicodedata.category(c) != 'Mn')
+    return name.lower().replace(' ', '-')
+
+
 @app.get("/api/charts/hourly/{city}")
 async def get_hourly_chart(city: str = "fort-de-france"):
     """Get hourly dashboard chart for a city."""
-    city_slug = city.lower().replace(" ", "_").replace("-", "_")
+    city_slug = _normalize_city_name(city)
     chart_path = Path(CHARTS_DIR) / f"hourly_dashboard_{city_slug}.html"
 
     if not chart_path.exists():

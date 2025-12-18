@@ -76,12 +76,20 @@ class MartiniqueChartGenerator:
 
         return str(output_path)
 
+    def _normalize_city_name(self, name: str) -> str:
+        """Normalize city name for filename (remove accents, lowercase, hyphens)."""
+        import unicodedata
+        name = unicodedata.normalize('NFD', name)
+        name = ''.join(c for c in name if unicodedata.category(c) != 'Mn')
+        return name.lower().replace(' ', '-')
+
     def generate_hourly_dashboard(self, city: str = "Fort-de-France") -> str:
         """Generate hourly forecast dashboard with multiple metrics."""
-        csv_path = Path(DATA_DIR) / f"hourly_{city.lower().replace(' ', '_')}.csv"
+        city_slug = self._normalize_city_name(city)
+        csv_path = Path(DATA_DIR) / f"hourly_{city_slug}.csv"
 
         if not csv_path.exists():
-            logger.warning(f"No hourly data for {city}")
+            logger.warning(f"No hourly data for {city} (looking for {csv_path})")
             return ""
 
         df = pd.read_csv(csv_path)
@@ -179,7 +187,7 @@ class MartiniqueChartGenerator:
         fig.update_yaxes(title_text="mm", row=2, col=1)
         fig.update_yaxes(title_text="km/h", row=3, col=1)
 
-        output_path = Path(CHARTS_DIR) / f"hourly_dashboard_{city.lower().replace(' ', '_')}.html"
+        output_path = Path(CHARTS_DIR) / f"hourly_dashboard_{city_slug}.html"
         fig.write_html(str(output_path))
         logger.info(f"Hourly dashboard saved: {output_path}")
 

@@ -79,25 +79,42 @@ def generate_sample_data(logger) -> dict:
     df.to_csv(Path(DATA_DIR) / "city_forecasts.csv", index=False)
     logger.info(f"Generated {len(df)} forecast records")
 
-    hourly = []
-    for hour_offset in range(48):
-        hour_time = base_date + timedelta(hours=hour_offset)
-        base_temp = 26 + 4 * abs((hour_time.hour - 14) / 12 - 1)
+    # Generate hourly data for all cities
+    def normalize_city_name(name):
+        """Normalize city name for filename."""
+        import unicodedata
+        # Remove accents
+        name = unicodedata.normalize('NFD', name)
+        name = ''.join(c for c in name if unicodedata.category(c) != 'Mn')
+        # Convert to lowercase and replace spaces with hyphens
+        return name.lower().replace(' ', '-')
 
-        hourly.append({
-            "datetime": hour_time.isoformat(),
-            "temperature": round(base_temp + random.uniform(-1, 1), 1),
-            "feels_like": round(base_temp + random.uniform(1, 3), 1),
-            "humidity": random.randint(70, 95),
-            "rain_1h": round(random.uniform(0, 5), 1) if random.random() > 0.7 else 0,
-            "rain_prob": random.randint(10, 80),
-            "wind_speed": random.randint(10, 30),
-            "wind_gust": random.randint(20, 45),
-            "wind_direction": random.randint(0, 360),
-            "cloud_cover": random.randint(20, 90)
-        })
+    for city in cities:
+        hourly = []
+        city_base_temp = 26 + random.uniform(-1, 2)  # Slight variation per city
 
-    pd.DataFrame(hourly).to_csv(Path(DATA_DIR) / "hourly_fort-de-france.csv", index=False)
+        for hour_offset in range(48):
+            hour_time = base_date + timedelta(hours=hour_offset)
+            # Temperature varies through the day
+            temp_variation = 4 * abs((hour_time.hour - 14) / 12 - 1)
+            base_temp = city_base_temp + temp_variation
+
+            hourly.append({
+                "datetime": hour_time.isoformat(),
+                "temperature": round(base_temp + random.uniform(-1, 1), 1),
+                "feels_like": round(base_temp + random.uniform(1, 3), 1),
+                "humidity": random.randint(70, 95),
+                "rain_1h": round(random.uniform(0, 5), 1) if random.random() > 0.7 else 0,
+                "rain_prob": random.randint(10, 80),
+                "wind_speed": random.randint(10, 30),
+                "wind_gust": random.randint(20, 45),
+                "wind_direction": random.randint(0, 360),
+                "cloud_cover": random.randint(20, 90)
+            })
+
+        city_slug = normalize_city_name(city["name"])
+        pd.DataFrame(hourly).to_csv(Path(DATA_DIR) / f"hourly_{city_slug}.csv", index=False)
+        logger.info(f"Generated hourly data for {city['name']}")
 
     alerts = {
         "timestamp": datetime.now().isoformat(),
