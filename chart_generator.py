@@ -61,12 +61,13 @@ class MartiniqueChartGenerator:
             ))
 
         fig.update_layout(
-            title="Prévisions de Température - Martinique",
+            title=dict(text="Prévisions de Température - Martinique", y=0.98),
             xaxis_title="Date",
             yaxis_title="Température (°C)",
             template="plotly_white",
             hovermode="x unified",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02)
+            legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5),
+            margin=dict(b=120)
         )
 
         output_path = Path(CHARTS_DIR) / "temperature_chart.html"
@@ -166,11 +167,12 @@ class MartiniqueChartGenerator:
             )
 
         fig.update_layout(
-            title=f"Prévisions Horaires - {city}",
+            title=dict(text=f"Prévisions Horaires - {city}", y=0.98),
             height=800,
             template="plotly_white",
             showlegend=True,
-            legend=dict(orientation="h", yanchor="bottom", y=1.02)
+            legend=dict(orientation="h", yanchor="top", y=-0.08, xanchor="center", x=0.5),
+            margin=dict(b=80)
         )
 
         fig.update_yaxes(title_text="°C", row=1, col=1)
