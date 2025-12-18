@@ -137,16 +137,12 @@
     <section class="hero">
       <div class="hero-bar">
         <div><h1>Alertes SMS — Martinique</h1><p>Recevez les alertes météo critiques sur votre téléphone.</p></div>
-        <div class="meta-chip">Vérification : double SMS</div>
+        <div class="meta-chip">Inscription rapide</div>
       </div>
       <div class="hero-body">
         <div class="form" aria-label="Formulaire d'abonnement SMS">
           <div class="section-head" style="margin-bottom:10px;">
-            <div><h2 class="section-title">S'abonner en 2 étapes</h2><p class="section-sub">Couverture <b>Martinique entière</b> — <b>tous les phénomènes</b> météo à risque.</p></div>
-          </div>
-          <div class="stepper" aria-label="Étapes de validation">
-            <div id="step1" class="step active"><span class="n">1</span> Vérifier le numéro</div>
-            <div id="step2" class="step"><span class="n">2</span> Confirmer l'abonnement</div>
+            <div><h2 class="section-title">S'abonner aux alertes</h2><p class="section-sub">Couverture <b>Martinique entière</b> — <b>tous les phénomènes</b> météo à risque.</p></div>
           </div>
           <div class="grid2">
             <div class="field"><div class="label">Numéro de téléphone</div><input id="phone" class="control" type="tel" placeholder="Ex : +596 696 12 34 56" autocomplete="tel" inputmode="tel"><div class="help">Format conseillé : +596 … (Martinique).</div></div>
@@ -157,30 +153,20 @@
             <div class="field"><div class="label">Notifications</div><select id="notifPref" class="control" aria-label="Type de notification"><option value="sms">SMS uniquement</option><option value="email">Email uniquement</option><option value="both">SMS + Email</option></select><div class="help">Choisissez comment recevoir les alertes.</div></div>
           </div>
           <div class="divider"></div>
-          <div class="field"><div class="label">Code de vérification (SMS #1)</div>
-            <div class="otp-row">
-              <div class="otp"><input id="otp" class="control" type="text" placeholder="••••••" inputmode="numeric" maxlength="6" aria-label="Code à 6 chiffres" disabled></div>
-              <button id="sendCode" class="btn-soft" type="button">Envoyer le code</button>
-              <button id="verifyCode" class="btn-soft" type="button" disabled>Valider le code</button>
-              <button id="resendCode" class="btn-soft" type="button" disabled>Renvoyer (60s)</button>
-            </div>
-            <div class="help" id="otpHelp">Étape 1 : envoyez un code SMS et saisissez-le ici.</div>
-          </div>
+          <div class="field"><div class="label">Phénomènes couverts</div><div class="help">Orages & pluies | Vent fort | Houle/submersion | Cyclone | Chaleur<br><b>Tous inclus automatiquement.</b></div></div>
           <div class="divider"></div>
-          <div class="field"><div class="label">Phénomènes couverts</div><div class="help">✔️ Orages & pluies • ✔️ Vent fort • ✔️ Houle/submersion • ✔️ Cyclone • ✔️ Chaleur<br><b>Tous inclus automatiquement.</b></div></div>
-          <div class="divider"></div>
-          <div class="consent"><input type="checkbox" id="consent"><label for="consent">J'accepte de recevoir des SMS d'alerte météo. Je peux me désinscrire avec <b>STOP</b>.<div class="help" style="color:#1d4ed8;margin-top:6px;">La confirmation déclenche un <b>2ᵉ SMS</b> d'activation.</div></label></div>
+          <div class="consent"><input type="checkbox" id="consent"><label for="consent">J'accepte de recevoir des alertes météo. Je peux me désinscrire avec <b>STOP</b>.</label></div>
           <div class="cta-row">
-            <button id="confirmSub" class="btn" type="button" disabled>📩 Confirmer l'abonnement (SMS #2)</button>
-            <button id="testAlert" class="btn btn-danger" type="button" disabled>🚨 Tester une alerte</button>
+            <button id="subscribeBtn" class="btn" type="button" disabled>S'abonner</button>
+            <button id="testAlert" class="btn btn-danger" type="button" style="display:none;">Tester une alerte</button>
           </div>
           <div id="toast" class="toast" role="status" aria-live="polite"></div>
           <p class="help" style="margin-top:12px;" id="refCodeDisplay"></p>
         </div>
         <aside class="side">
-          <div class="panel"><h3>📌 Fonctionnement</h3><div class="rows"><div class="row"><span class="k">Étape 1</span><span class="v">SMS code (OTP)</span></div><div class="row"><span class="k">Étape 2</span><span class="v">SMS activation</span></div><div class="row"><span class="k">Couverture</span><span class="v">Martinique entière</span></div><div class="row"><span class="k">Désinscription</span><span class="v">STOP à tout moment</span></div></div></div>
-          <div class="panel" style="background:#fffbeb;border-color:rgba(234,179,8,.22)"><h3>🛟 Conseils rapides</h3><div class="help" style="margin:0;">• Cyclone : lampe, eau, batteries, papiers.<br>• Pluies : éviter ravines/routes inondées.<br>• Vent fort : sécuriser objets extérieurs.</div></div>
-          <div class="sms-preview" aria-label="Aperçu d'un SMS"><div style="font-weight:950;margin-bottom:10px;">Aperçu SMS</div><div class="bubble" id="smsPreview"><strong>⚠️ ALERTE VENT FORT</strong> — Martinique.<br>Rafales possibles jusqu'à <strong>70 km/h</strong> entre 16:00–20:00.<br>Conseil : limitez les déplacements et sécurisez les objets extérieurs.<div class="tagline">Météo Martinique • STOP pour se désinscrire</div></div></div>
+          <div class="panel"><h3>Fonctionnement</h3><div class="rows"><div class="row"><span class="k">Inscription</span><span class="v">Immédiate</span></div><div class="row"><span class="k">Couverture</span><span class="v">Martinique entière</span></div><div class="row"><span class="k">Désinscription</span><span class="v">STOP à tout moment</span></div></div></div>
+          <div class="panel" style="background:#fffbeb;border-color:rgba(234,179,8,.22)"><h3>Conseils rapides</h3><div class="help" style="margin:0;">Cyclone : lampe, eau, batteries, papiers.<br>Pluies : éviter ravines/routes inondées.<br>Vent fort : sécuriser objets extérieurs.</div></div>
+          <div class="sms-preview" aria-label="Aperçu d'un SMS"><div style="font-weight:950;margin-bottom:10px;">Aperçu SMS</div><div class="bubble" id="smsPreview"><strong>ALERTE VENT FORT</strong> — Martinique.<br>Rafales possibles jusqu'à <strong>70 km/h</strong> entre 16:00–20:00.<br>Conseil : limitez les déplacements et sécurisez les objets extérieurs.<div class="tagline">Météo Martinique | STOP pour se désinscrire</div></div></div>
         </aside>
       </div>
     </section>
@@ -188,7 +174,7 @@
     <section class="card section">
       <div class="section-head"><div><h2 class="section-title">Formules Alertes SMS</h2><p class="section-sub">Standard (particuliers) et Pro (organisations).</p></div></div>
       <div class="pricing">
-        <div class="card plan" style="box-shadow:none;border-color:rgba(37,99,235,.18)"><div class="top"><div><div style="font-weight:950;">Standard</div><div class="help">Pour les particuliers</div></div><span class="badge">Recommandé</span></div><div class="price">4,99€<span style="font-size:14px;color:#64748b;font-weight:900;">/mois</span></div><div class="help">Couverture Martinique • Tous phénomènes</div><ul><li>Alertes prioritaires</li><li>Conseils adaptés</li><li>Désinscription STOP</li><li>Double validation SMS</li></ul><div class="actions"><button class="btn" type="button" onclick="document.getElementById('phone').focus()">S'abonner</button></div></div>
+        <div class="card plan" style="box-shadow:none;border-color:rgba(37,99,235,.18)"><div class="top"><div><div style="font-weight:950;">Standard</div><div class="help">Pour les particuliers</div></div><span class="badge">Recommandé</span></div><div class="price">4,99€<span style="font-size:14px;color:#64748b;font-weight:900;">/mois</span></div><div class="help">Couverture Martinique • Tous phénomènes</div><ul><li>Alertes prioritaires</li><li>Conseils adaptés à votre profil</li><li>Désinscription STOP</li><li>Inscription immédiate</li></ul><div class="actions"><button class="btn" type="button" onclick="document.getElementById('phone').focus()">S'abonner</button></div></div>
         <div class="card plan" style="box-shadow:none;"><div class="top"><div><div style="font-weight:950;">Pro</div><div class="help">Entreprises & collectivités</div></div><span class="badge">B2B</span></div><div class="price">Sur devis</div><div class="help">Gestion d'équipes & options avancées</div><ul><li>Multi-numéros</li><li>Historique & rapports</li><li>Support prioritaire</li><li>WhatsApp/Email en option</li></ul><div class="actions"><button class="btn-soft" type="button">Nous contacter</button></div></div>
       </div>
     </section>
@@ -209,10 +195,10 @@
     <section class="card section">
       <div class="section-head"><div><h2 class="section-title">Questions fréquentes</h2><p class="section-sub">Validation, coût, et désinscription.</p></div></div>
       <div class="faq">
-        <details><summary>Pourquoi une double validation SMS ?</summary><p>Pour éviter les erreurs de numéro et confirmer que le téléphone appartient bien à l'utilisateur.</p></details>
         <details><summary>Quels phénomènes sont couverts ?</summary><p>Tous : orages, pluies intenses, vent fort, houle/submersion, chaleur extrême, cyclone/ouragan.</p></details>
         <details><summary>Comment me désinscrire ?</summary><p>Envoyez <b>STOP</b> au numéro émetteur ou utilisez la section "Gérer mon abonnement".</p></details>
         <details><summary>Mes données sont-elles partagées ?</summary><p>Non. Seuls le numéro et les préférences nécessaires sont stockés.</p></details>
+        <details><summary>Comment fonctionnent les alertes ?</summary><p>Dès qu'une vigilance jaune, orange ou rouge est émise par Météo France, vous recevez une alerte avec des conseils adaptés à votre profil.</p></details>
       </div>
     </section>
   </div>
@@ -233,16 +219,12 @@
   const $ = (id) => document.getElementById(id);
 
   const phone = $("phone"), email = $("email"), profile = $("profile"), notifPref = $("notifPref");
-  const otp = $("otp"), consent = $("consent");
-  const sendCode = $("sendCode"), verifyCode = $("verifyCode"), resendCode = $("resendCode");
-  const confirmSub = $("confirmSub"), testAlert = $("testAlert");
-  const toast = $("toast"), otpHelp = $("otpHelp"), refCodeDisplay = $("refCodeDisplay");
-  const step1 = $("step1"), step2 = $("step2");
+  const consent = $("consent"), subscribeBtn = $("subscribeBtn"), testAlert = $("testAlert");
+  const toast = $("toast"), refCodeDisplay = $("refCodeDisplay");
   const managePhone = $("managePhone"), manageRef = $("manageRef");
   const updateBtn = $("updateBtn"), unsubBtn = $("unsubBtn"), manageToast = $("manageToast");
 
-  let otpSent = false, otpVerified = false, referenceCode = null;
-  let resendTimer = null, resendLeft = 0;
+  let subscribed = false, referenceCode = null;
 
   function normalizePhone(val){ return (val || "").trim().replace(/\s+/g, " "); }
   function normalizeEmail(val){ return (val || "").trim().toLowerCase(); }
@@ -270,27 +252,10 @@
   function showToast(type, msg){ toast.className = "toast " + type; toast.textContent = msg; }
   function clearToast(){ toast.className = "toast"; toast.textContent = ""; }
   function showManageToast(type, msg){ manageToast.className = "toast " + type; manageToast.textContent = msg; }
-  function setStep(state){ step1.classList.toggle("active", state === 1); step2.classList.toggle("active", state === 2); }
-  function markStepDone(el, done){ el.classList.toggle("done", done); }
-
-  function startResendCountdown(seconds){
-    resendLeft = seconds;
-    resendCode.disabled = true;
-    resendCode.textContent = `Renvoyer (${resendLeft}s)`;
-    if (resendTimer) clearInterval(resendTimer);
-    resendTimer = setInterval(() => {
-      resendLeft -= 1;
-      if (resendLeft <= 0){ clearInterval(resendTimer); resendTimer = null; resendCode.disabled = false; resendCode.textContent = "Renvoyer"; }
-      else { resendCode.textContent = `Renvoyer (${resendLeft}s)`; }
-    }, 1000);
-  }
 
   function updateButtons(){
     const contactOk = isContactValid();
-    sendCode.disabled = !contactOk;
-    verifyCode.disabled = !(contactOk && otp.value.trim().length === 6 && otpSent);
-    confirmSub.disabled = !(otpVerified && consent.checked);
-    testAlert.disabled = !(otpVerified && consent.checked);
+    subscribeBtn.disabled = !(contactOk && consent.checked);
   }
 
   async function apiCall(endpoint, method = 'GET', body = null){
@@ -302,58 +267,38 @@
     return data;
   }
 
-  async function handleSendOtp(){
+  async function handleSubscribe(){
     clearToast();
     const p = normalizePhone(phone.value);
     const e = normalizeEmail(email.value);
     const pref = notifPref.value;
 
     if (!isContactValid()){ showToast("err", "Contact invalide pour le type de notification choisi."); return; }
-    sendCode.disabled = true;
+
+    subscribeBtn.disabled = true;
+    subscribeBtn.textContent = "Inscription...";
+
     try {
       const payload = { profile: profile.value, notification_prefs: pref };
       if (p) payload.phone = p;
       if (e) payload.email = e;
-      const data = await apiCall('/otp/send', 'POST', payload);
-      otpSent = true; otpVerified = false;
+
+      const data = await apiCall('/subscribe', 'POST', payload);
+
+      subscribed = true;
       referenceCode = data.reference_code;
-      otp.disabled = false; otp.value = ""; otp.focus();
-      const channels = data.channels || [pref];
-      otpHelp.innerHTML = `Code envoyé via <b>${channels.join(' + ')}</b>. Saisissez-le pour continuer.`;
-      showToast("info", `Code envoyé via ${channels.join(' + ')}.`);
-      if (referenceCode) refCodeDisplay.textContent = `Référence: ${referenceCode}`;
-      startResendCountdown(60);
-      markStepDone(step1, false); markStepDone(step2, false); setStep(1);
-    } catch(e){ showToast("err", e.message); }
-    updateButtons();
-  }
+      refCodeDisplay.textContent = `Référence: ${referenceCode}`;
+      showToast("ok", "Abonnement confirmé ! Vous recevrez les alertes météo.");
 
-  async function handleVerifyOtp(){
-    clearToast();
-    const p = normalizePhone(phone.value);
-    const e = normalizeEmail(email.value);
-    try {
-      const data = await apiCall('/otp/verify', 'POST', { phone: p || e, otp: otp.value.trim() });
-      otpVerified = true;
-      showToast("ok", "Vérifié ✅ Vous pouvez confirmer l'abonnement.");
-      markStepDone(step1, true); setStep(2);
-    } catch(err){ otpVerified = false; showToast("err", err.message); }
-    updateButtons();
-  }
+      // Show test button
+      testAlert.style.display = "inline-block";
 
-  async function handleConfirmSubscription(){
-    clearToast();
-    const p = normalizePhone(phone.value);
-    const e = normalizeEmail(email.value);
-    const pref = notifPref.value;
-    try {
-      const payload = { profile: profile.value, notification_prefs: pref };
-      if (p) payload.phone = p;
-      if (e) payload.email = e;
-      const data = await apiCall('/subscribe/confirm', 'POST', payload);
-      showToast("ok", `Abonnement confirmé ✅ Message d'activation envoyé. Ref: ${data.reference_code || referenceCode}`);
-      markStepDone(step2, true);
-    } catch(err){ showToast("err", err.message); }
+    } catch(err){
+      showToast("err", err.message);
+    }
+
+    subscribeBtn.textContent = subscribed ? "Abonné" : "S'abonner";
+    subscribeBtn.disabled = subscribed;
   }
 
   async function handleTestAlert(){
@@ -382,12 +327,8 @@
   phone.addEventListener("input", () => { clearToast(); updateButtons(); });
   email.addEventListener("input", () => { clearToast(); updateButtons(); });
   notifPref.addEventListener("change", () => { clearToast(); updateButtons(); });
-  otp.addEventListener("input", () => { otp.value = otp.value.replace(/\D/g, "").slice(0,6); updateButtons(); });
   consent.addEventListener("change", updateButtons);
-  sendCode.addEventListener("click", handleSendOtp);
-  resendCode.addEventListener("click", handleSendOtp);
-  verifyCode.addEventListener("click", handleVerifyOtp);
-  confirmSub.addEventListener("click", handleConfirmSubscription);
+  subscribeBtn.addEventListener("click", handleSubscribe);
   testAlert.addEventListener("click", handleTestAlert);
   unsubBtn.addEventListener("click", handleUnsubscribe);
 

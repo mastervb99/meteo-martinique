@@ -137,12 +137,14 @@ async def health():
     }
 
 
-@app.post("/api/otp/send")
-async def send_otp(request: SubscribeRequest):
-    """Send OTP verification code via SMS and/or Email.
+@app.post("/api/subscribe")
+async def subscribe(request: SubscribeRequest):
+    """Subscribe to weather alerts.
 
-    Step 1 of double validation flow.
+    Creates subscription and sends welcome message immediately.
+    No OTP verification required.
     """
+    # Create subscription
     result = subscription_manager.create_subscription(
         phone_number=request.phone,
         email=request.email,
@@ -155,87 +157,33 @@ async def send_otp(request: SubscribeRequest):
             raise HTTPException(status_code=409, detail=result["error"])
         raise HTTPException(status_code=400, detail=result.get("error", "Failed to create subscription"))
 
-    otp_result = otp_service.send_otp(
+    # Mark as verified immediately
+    if request.phone:
+        subscription_manager.verify_subscription(request.phone)
+    if request.email:
+        # Also mark email verified
+        from subscriptions import get_db
+        with get_db() as conn:
+            conn.execute(
+                "UPDATE subscribers SET verified = TRUE, email_verified = TRUE WHERE email = ?",
+                (request.email.strip().lower(),)
+            )
+
+    # Send welcome message
+    welcome_result = alert_service.send_welcome(
         phone_number=request.phone,
         email=request.email,
-        channel=request.notification_prefs
-    )
-
-    if not otp_result["success"]:
-        return {
-            "success": False,
-            "error": otp_result.get("error", "Failed to send OTP"),
-            "demo_mode": not sms_service.is_configured() and not email_service.is_configured()
-        }
-
-    return {
-        "success": True,
-        "message": "Verification code sent",
-        "channels": otp_result.get("channels", []),
-        "expires_in": otp_result.get("expires_in", 10),
-        "reference_code": result.get("reference_code")
-    }
-
-
-@app.post("/api/otp/verify")
-async def verify_otp(request: OTPVerifyRequest):
-    """Verify OTP code.
-
-    Validates the code sent via SMS.
-    """
-    result = otp_service.verify_otp(request.phone, request.otp)
-
-    if not result["success"]:
-        raise HTTPException(status_code=400, detail=result.get("error", "Verification failed"))
-
-    verify_result = subscription_manager.verify_subscription(request.phone)
-
-    if not verify_result["success"]:
-        raise HTTPException(status_code=400, detail="Failed to verify subscription")
-
-    return {
-        "success": True,
-        "verified": True,
-        "reference_code": verify_result.get("reference_code"),
-        "profile": verify_result.get("profile")
-    }
-
-
-@app.post("/api/subscribe/confirm")
-async def confirm_subscription(request: SubscribeRequest):
-    """Confirm subscription and send welcome message.
-
-    Step 2 of double validation flow - sends activation SMS/Email.
-    """
-    subscriber = None
-    if request.phone:
-        subscriber = subscription_manager.get_subscriber(phone_number=request.phone)
-    if not subscriber and request.email:
-        subscriber = subscription_manager.get_subscriber(email=request.email)
-
-    if not subscriber:
-        raise HTTPException(status_code=404, detail="Subscription not found")
-
-    if not subscriber["verified"]:
-        raise HTTPException(status_code=400, detail="Not verified - complete OTP first")
-
-    if not subscriber["active"]:
-        raise HTTPException(status_code=400, detail="Subscription is inactive")
-
-    notification_prefs = subscriber.get("notification_prefs", "sms")
-    result = alert_service.send_welcome(
-        phone_number=subscriber.get("phone_number"),
-        email=subscriber.get("email"),
-        profile=subscriber["profile"],
-        notification_prefs=notification_prefs
+        profile=request.profile,
+        notification_prefs=request.notification_prefs
     )
 
     return {
-        "success": result["success"],
-        "message": f"Subscription confirmed - welcome sent via {notification_prefs}" if result["success"] else "Failed to send welcome",
-        "reference_code": subscriber["reference_code"],
-        "profile": subscriber["profile"],
-        "notification_prefs": notification_prefs
+        "success": True,
+        "message": "Subscription confirmed",
+        "reference_code": result.get("reference_code"),
+        "profile": request.profile,
+        "notification_prefs": request.notification_prefs,
+        "welcome_sent": welcome_result.get("success", False)
     }
 
 
