@@ -21,7 +21,8 @@ import re
 
 from brevo_service import BrevoSMSService, BrevoEmailService, OTPService, AlertService
 from subscriptions import SubscriptionManager
-from config import OUTPUT_DIR, MAPS_DIR, CHARTS_DIR, DATA_DIR, MARTINIQUE
+from stripe_service import stripe_service
+from config import OUTPUT_DIR, MAPS_DIR, CHARTS_DIR, DATA_DIR, MARTINIQUE, STRIPE_PUBLISHABLE_KEY, SUBSCRIPTION_PRICES
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -334,6 +335,125 @@ async def get_profiles():
 
 
 # ============================================================================
+# STRIPE PAYMENT ENDPOINTS
+# ============================================================================
+
+class CheckoutRequest(BaseModel):
+    """Request model for Stripe checkout."""
+    plan_type: str  # "sms_monthly" or "email_yearly"
+    email: str
+    phone: Optional[str] = None
+
+    @field_validator('plan_type')
+    @classmethod
+    def validate_plan(cls, v):
+        if v not in ("sms_monthly", "email_yearly"):
+            raise ValueError('Plan must be sms_monthly or email_yearly')
+        return v
+
+
+@app.get("/api/stripe/config")
+async def get_stripe_config():
+    """Get Stripe publishable key and pricing info."""
+    return {
+        "publishable_key": STRIPE_PUBLISHABLE_KEY,
+        "prices": {
+            "sms_monthly": {
+                "amount": SUBSCRIPTION_PRICES["sms_monthly"]["amount"] / 100,
+                "currency": "EUR",
+                "interval": "mois",
+                "name": "Alertes SMS"
+            },
+            "email_yearly": {
+                "amount": SUBSCRIPTION_PRICES["email_yearly"]["amount"] / 100,
+                "currency": "EUR",
+                "interval": "an",
+                "name": "Alertes Email"
+            }
+        }
+    }
+
+
+@app.post("/api/stripe/checkout")
+async def create_checkout(request: CheckoutRequest):
+    """Create Stripe checkout session."""
+    result = stripe_service.create_checkout_session(
+        plan_type=request.plan_type,
+        customer_email=request.email,
+        customer_phone=request.phone,
+        success_url="https://meteo-martinique.onrender.com/success",
+        cancel_url="https://meteo-martinique.onrender.com/"
+    )
+
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result.get("error", "Checkout failed"))
+
+    return result
+
+
+@app.get("/api/stripe/verify/{session_id}")
+async def verify_payment(session_id: str):
+    """Verify payment and activate subscription."""
+    result = stripe_service.verify_session(session_id)
+
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result.get("error", "Verification failed"))
+
+    if result.get("paid"):
+        # Activate subscription in our database
+        phone = result.get("customer_phone")
+        plan_type = result.get("plan_type")
+
+        # Update subscription with payment info
+        if phone:
+            from subscriptions import get_db
+            with get_db() as conn:
+                conn.execute(
+                    """UPDATE subscribers
+                       SET stripe_subscription_id = ?, payment_status = 'active'
+                       WHERE phone_number = ?""",
+                    (result.get("subscription_id"), phone)
+                )
+
+        logger.info(f"Payment verified for {plan_type}: {result.get('subscription_id')}")
+
+    return result
+
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhooks."""
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    result = stripe_service.handle_webhook(payload, sig_header)
+
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result.get("error"))
+
+    # Handle events
+    if result.get("event") == "checkout_completed":
+        logger.info(f"Checkout completed: {result.get('subscription_id')}")
+    elif result.get("event") == "subscription_cancelled":
+        logger.info(f"Subscription cancelled: {result.get('subscription_id')}")
+    elif result.get("event") == "payment_failed":
+        logger.warning(f"Payment failed: {result.get('customer_id')}")
+
+    return {"received": True}
+
+
+@app.get("/api/stripe/status")
+async def get_payment_status(email: str):
+    """Check subscription status for a customer."""
+    result = stripe_service.get_subscription_status(email)
+
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result.get("error"))
+
+    return result
+
+
+# ============================================================================
 # WEATHER DATA API ENDPOINTS
 # ============================================================================
 
@@ -582,6 +702,15 @@ async def page_previsions():
 async def page_cartes():
     """Maps page."""
     html_path = STATIC_DIR / "cartes.html"
+    if html_path.exists():
+        return FileResponse(html_path)
+    raise HTTPException(status_code=404, detail="Page not found")
+
+
+@app.get("/success", response_class=HTMLResponse)
+async def page_success():
+    """Payment success page."""
+    html_path = STATIC_DIR / "success.html"
     if html_path.exists():
         return FileResponse(html_path)
     raise HTTPException(status_code=404, detail="Page not found")

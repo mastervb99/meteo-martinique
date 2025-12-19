@@ -14,6 +14,17 @@ BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "alertes@meteo-martinique.f
 BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "Meteo Martinique")
 BREVO_SMS_SENDER = os.getenv("BREVO_SMS_SENDER", "MeteoMQ")  # 11 char max for SMS sender
 
+# Stripe payment credentials
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+
+# Subscription pricing (in EUR cents)
+SUBSCRIPTION_PRICES = {
+    "sms_monthly": {"amount": 499, "currency": "eur", "interval": "month", "name": "Alertes SMS"},
+    "email_yearly": {"amount": 1000, "currency": "eur", "interval": "year", "name": "Alertes Email"}
+}
+
 # Legacy Twilio (deprecated - kept for migration)
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")

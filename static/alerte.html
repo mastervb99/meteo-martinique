@@ -172,11 +172,12 @@
     </section>
 
     <section class="card section">
-      <div class="section-head"><div><h2 class="section-title">Formules Alertes SMS</h2><p class="section-sub">Standard (particuliers) et Pro (organisations).</p></div></div>
+      <div class="section-head"><div><h2 class="section-title">Formules d'abonnement</h2><p class="section-sub">Choisissez votre formule d'alertes météo.</p></div></div>
       <div class="pricing">
-        <div class="card plan" style="box-shadow:none;border-color:rgba(37,99,235,.18)"><div class="top"><div><div style="font-weight:950;">Standard</div><div class="help">Pour les particuliers</div></div><span class="badge">Recommandé</span></div><div class="price">4,99€<span style="font-size:14px;color:#64748b;font-weight:900;">/mois</span></div><div class="help">Couverture Martinique • Tous phénomènes</div><ul><li>Alertes prioritaires</li><li>Conseils adaptés à votre profil</li><li>Désinscription STOP</li><li>Inscription immédiate</li></ul><div class="actions"><button class="btn" type="button" onclick="document.getElementById('phone').focus()">S'abonner</button></div></div>
-        <div class="card plan" style="box-shadow:none;"><div class="top"><div><div style="font-weight:950;">Pro</div><div class="help">Entreprises & collectivités</div></div><span class="badge">B2B</span></div><div class="price">Sur devis</div><div class="help">Gestion d'équipes & options avancées</div><ul><li>Multi-numéros</li><li>Historique & rapports</li><li>Support prioritaire</li><li>WhatsApp/Email en option</li></ul><div class="actions"><button class="btn-soft" type="button">Nous contacter</button></div></div>
+        <div class="card plan" style="box-shadow:none;border-color:rgba(37,99,235,.18)"><div class="top"><div><div style="font-weight:950;">Alertes SMS</div><div class="help">Notifications instantanées</div></div><span class="badge">Recommandé</span></div><div class="price">4,99€<span style="font-size:14px;color:#64748b;font-weight:900;">/mois</span></div><div class="help">Couverture Martinique • Tous phénomènes</div><ul><li>Alertes SMS instantanées</li><li>Conseils adaptés à votre profil</li><li>Désinscription STOP</li><li>Paiement sécurisé Stripe</li></ul><div class="actions"><button class="btn" type="button" onclick="startCheckout('sms_monthly')">S'abonner SMS</button></div></div>
+        <div class="card plan" style="box-shadow:none;border-color:rgba(34,197,94,.18)"><div class="top"><div><div style="font-weight:950;">Alertes Email</div><div class="help">Économique & complet</div></div><span class="badge" style="background:rgba(34,197,94,.12);color:#16a34a;border-color:rgba(34,197,94,.20);">Économique</span></div><div class="price">10€<span style="font-size:14px;color:#64748b;font-weight:900;">/an</span></div><div class="help">Alertes détaillées par email</div><ul><li>Alertes email détaillées</li><li>Prévisions complètes</li><li>Résiliation à tout moment</li><li>Paiement sécurisé Stripe</li></ul><div class="actions"><button class="btn" type="button" style="background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 16px 30px rgba(34,197,94,.18);" onclick="startCheckout('email_yearly')">S'abonner Email</button></div></div>
       </div>
+      <div id="checkoutToast" class="toast" role="status" style="margin-top:12px;"></div>
     </section>
 
     <section class="card section">
@@ -333,6 +334,53 @@
   unsubBtn.addEventListener("click", handleUnsubscribe);
 
   updateButtons();
+
+  // Stripe Checkout
+  const checkoutToast = $("checkoutToast");
+
+  function showCheckoutToast(type, msg){
+    checkoutToast.className = "toast " + type;
+    checkoutToast.textContent = msg;
+  }
+
+  async function startCheckout(planType){
+    const emailVal = normalizeEmail(email.value);
+    const phoneVal = normalizePhone(phone.value);
+
+    // Require email for checkout
+    if (!isEmailLikelyValid(emailVal)){
+      showCheckoutToast("err", "Veuillez entrer votre email ci-dessus avant de vous abonner.");
+      email.focus();
+      return;
+    }
+
+    // For SMS plan, also require phone
+    if (planType === 'sms_monthly' && !isPhoneLikelyValid(phoneVal)){
+      showCheckoutToast("err", "Veuillez entrer votre numéro de téléphone pour les alertes SMS.");
+      phone.focus();
+      return;
+    }
+
+    showCheckoutToast("info", "Redirection vers le paiement sécurisé...");
+
+    try {
+      const payload = {
+        plan_type: planType,
+        email: emailVal
+      };
+      if (phoneVal) payload.phone = phoneVal;
+
+      const data = await apiCall('/stripe/checkout', 'POST', payload);
+
+      if (data.checkout_url){
+        window.location.href = data.checkout_url;
+      } else {
+        showCheckoutToast("err", "Erreur lors de la création de la session de paiement.");
+      }
+    } catch(err){
+      showCheckoutToast("err", err.message || "Erreur de paiement.");
+    }
+  }
 </script>
 </body>
 </html>
