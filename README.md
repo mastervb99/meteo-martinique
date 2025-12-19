@@ -1,6 +1,6 @@
 # Martinique Weather Dashboard
 
-Weather data extraction, visualization, and alert notification system for Martinique using Météo France API. Includes full weather dashboard with interactive maps, charts, and SMS/Email subscription system via Brevo.
+Weather data extraction, visualization, and alert notification system for Martinique using Météo France API. Includes full weather dashboard with interactive maps, charts, SMS/Email subscription system via Brevo, and Stripe payment processing.
 
 ## Live Demo
 
@@ -32,6 +32,12 @@ Weather data extraction, visualization, and alert notification system for Martin
 - 4 subscriber profiles (Plaisancier, Agriculteur, Entreprise, Grand Public)
 - Direct subscription (no OTP verification)
 
+**Payment Processing (Stripe)**
+- SMS subscription: €4.99/month
+- Email subscription: €10/year
+- Secure Stripe Checkout hosted payment page
+- Webhook support for payment events
+
 ## Quick Start
 
 ### Local Development
@@ -58,19 +64,27 @@ python api.py
 1. Fork/push to GitHub
 2. Create new Web Service on Render
 3. Connect GitHub repo
-4. Add environment variable: `BREVO_API_KEY=your_key`
+4. Add environment variables:
+   - `BREVO_API_KEY=your_key`
+   - `STRIPE_SECRET_KEY=sk_live_...`
 5. Deploy
 
 ## Configuration
 
 ```bash
 # .env file
-BREVO_API_KEY=your_brevo_api_key          # Required for SMS/Email
+
+# Brevo (SMS + Email) - Required
+BREVO_API_KEY=your_brevo_api_key
 BREVO_SENDER_EMAIL=alertes@meteo-martinique.fr
 BREVO_SENDER_NAME=Meteo Martinique
 BREVO_SMS_SENDER=MeteoMQ
 
-# Optional: For live Météo France data
+# Stripe (Payments) - Required for subscriptions
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...  # Optional
+
+# Météo France - Optional (for live data)
 METEO_FRANCE_APP_ID=your_app_id
 METEO_FRANCE_API_KEY=your_api_key
 ```
@@ -104,6 +118,15 @@ METEO_FRANCE_API_KEY=your_api_key
 | `/api/subscribe/{ref}` | GET | Get subscription details |
 | `/api/subscribe/unsubscribe` | DELETE | Unsubscribe |
 
+### Payments (Stripe)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/stripe/config` | GET | Get pricing info |
+| `/api/stripe/checkout` | POST | Create checkout session |
+| `/api/stripe/verify/{session_id}` | GET | Verify payment |
+| `/api/stripe/webhook` | POST | Handle Stripe webhooks |
+| `/api/stripe/status` | GET | Check subscription status |
+
 ### Utility
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -118,6 +141,7 @@ martinique_weather/
 ├── main.py                # CLI entry point
 ├── config.py              # Configuration
 ├── brevo_service.py       # Brevo SMS + Email
+├── stripe_service.py      # Stripe payment processing
 ├── subscriptions.py       # SQLite subscription management
 ├── alert_broadcaster.py   # Alert broadcasting
 ├── weather_extractor.py   # Météo France API
@@ -128,7 +152,8 @@ martinique_weather/
 │   ├── alerte.html        # Subscription page (/)
 │   ├── aujourdhui.html    # Today's weather
 │   ├── previsions.html    # 7-day forecast
-│   └── cartes.html        # Maps page
+│   ├── cartes.html        # Maps page
+│   └── success.html       # Payment success page
 ├── requirements.txt
 ├── .env.example
 ├── Dockerfile
@@ -158,6 +183,7 @@ docker-compose logs -f martinique-weather
 | fastapi | REST API framework |
 | uvicorn | ASGI server |
 | sib-api-v3-sdk | Brevo SMS/Email |
+| stripe | Payment processing |
 | folium | Interactive maps |
 | plotly | Charts and dashboards |
 | pandas | Data processing |
@@ -165,6 +191,6 @@ docker-compose logs -f martinique-weather
 
 ---
 
-**Version:** 2.1
+**Version:** 2.2
 **Author:** Vafa Bayat
-**Last Updated:** 2025-12-18
+**Last Updated:** 2025-12-19

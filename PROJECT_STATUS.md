@@ -19,7 +19,7 @@ Weather data extraction, visualization, and alert notification system for Martin
 
 ---
 
-## Current Status (2025-12-18)
+## Current Status (2025-12-19)
 
 ### Completed Features
 
@@ -82,13 +82,13 @@ STRIPE_WEBHOOK_SECRET=whsec_... (optional, for webhook verification)
 │  Frontend       │────▶│  FastAPI     │────▶│  Brevo          │
 │  (HTML + JS)    │     │  (api.py)    │     │  (SMS + Email)  │
 └─────────────────┘     └──────────────┘     └─────────────────┘
-                              │
-              ┌───────────────┼───────────────┐
-              ▼               ▼               ▼
-        ┌──────────┐   ┌──────────┐   ┌──────────────┐
-        │ SQLite   │   │ Maps     │   │ Charts       │
-        │ (subs)   │   │ (Folium) │   │ (Plotly)     │
-        └──────────┘   └──────────┘   └──────────────┘
+                              │                      │
+              ┌───────────────┼───────────────┐      │
+              ▼               ▼               ▼      ▼
+        ┌──────────┐   ┌──────────┐   ┌──────────┐ ┌──────────┐
+        │ SQLite   │   │ Maps     │   │ Charts   │ │ Stripe   │
+        │ (subs)   │   │ (Folium) │   │ (Plotly) │ │ (Pay)    │
+        └──────────┘   └──────────┘   └──────────┘ └──────────┘
 ```
 
 ---
@@ -173,9 +173,10 @@ martinique_weather/
 
 ### Awaiting Client Feedback
 
-1. **Test SMS delivery** - Client to subscribe and verify SMS receipt
-2. **Test Email delivery** - If using email notifications
-3. **Review dashboard pages** - Feedback on design/functionality
+1. **Test payment flow** - Complete a test subscription via Stripe
+2. **Test SMS delivery** - Verify SMS alerts are received
+3. **Test Email delivery** - Verify email alerts are received
+4. **Review pricing** - Confirm €4.99/mo SMS and €10/yr Email
 
 ### Potential Enhancements (If Requested)
 
@@ -183,7 +184,8 @@ martinique_weather/
 2. **Automated scheduler** - CRON job for regular data updates
 3. **WhatsApp integration** - Via Brevo if needed
 4. **Custom domain** - Deploy to o2switch with client domain
-5. **Admin panel** - View subscribers, send manual alerts
+5. **Admin panel** - View subscribers, manage payments
+6. **Stripe webhook** - Set up for subscription lifecycle events
 
 ---
 
@@ -195,7 +197,11 @@ martinique_weather/
 # Brevo (SMS + Email)
 BREVO_API_KEY=your_brevo_api_key
 
-# Optional: Météo France (for live data)
+# Stripe (Payments)
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...  # Optional
+
+# Météo France (for live data) - Optional
 METEO_FRANCE_APP_ID=your_app_id
 METEO_FRANCE_API_KEY=your_api_key
 ```
@@ -203,7 +209,9 @@ METEO_FRANCE_API_KEY=your_api_key
 ### Render.com Setup
 
 1. Connect GitHub repo
-2. Add BREVO_API_KEY in Environment
+2. Add environment variables:
+   - `BREVO_API_KEY`
+   - `STRIPE_SECRET_KEY`
 3. Deploy
 
 ---
@@ -215,6 +223,7 @@ METEO_FRANCE_API_KEY=your_api_key
 | 2025-12-16 | Initial contact, demo sent |
 | 2025-12-17 | SMS mockup received, backend built, deployed to Render |
 | 2025-12-18 | Brevo integration, OTP removed, dashboard pages added |
+| 2025-12-19 | Stripe payment integration (SMS €4.99/mo, Email €10/yr) |
 
 ---
 
