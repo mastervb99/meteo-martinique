@@ -1,6 +1,6 @@
 # Martinique Weather Dashboard
 
-Weather data extraction, visualization, and alert notification system for Martinique using Météo France API. Includes full weather dashboard with interactive maps, charts, SMS/Email subscription system via Brevo, and Stripe payment processing.
+Weather data extraction, visualization, and alert notification system for Martinique using Météo France API. Includes full weather dashboard with interactive maps, charts, separate SMS/Email subscription pages with embedded Stripe payment, and Brevo notifications.
 
 ## Live Demo
 
@@ -13,7 +13,11 @@ Weather data extraction, visualization, and alert notification system for Martin
 - Aujourd'hui: Current weather for all 10 Martinique cities
 - Prévisions: 7-day forecast with temperature charts
 - Cartes: Interactive maps (vigilance, forecast, rain) and comparison charts
-- Alertes: SMS/Email subscription for weather alerts
+- Alertes: Landing page with SMS/Email subscription options
+
+**Subscription Pages**
+- `/alerte-sms` - SMS subscription with phone input + embedded Stripe payment (€4.99/month)
+- `/alerte-email` - Email subscription with email input + embedded Stripe payment (€10/year)
 
 **Interactive Maps (Folium)**
 - Vigilance map with color-coded alert overlays
@@ -29,32 +33,29 @@ Weather data extraction, visualization, and alert notification system for Martin
 **Alert Notifications (Brevo)**
 - SMS alerts via Brevo API
 - Email alerts via Brevo API
-- 4 subscriber profiles (Plaisancier, Agriculteur, Entreprise, Grand Public)
+- 4 subscriber profiles (Particulier, Professionnel, Nautique, Tourisme)
 - Direct subscription (no OTP verification)
 
 **Payment Processing (Stripe)**
+- Embedded payment form using Stripe Elements (no redirect)
 - SMS subscription: €4.99/month
 - Email subscription: €10/year
-- Secure Stripe Checkout hosted payment page
-- Webhook support for payment events
+- PaymentIntent API for secure embedded payments
 
 ## Quick Start
 
 ### Local Development
 
 ```bash
-# Clone and setup
 git clone https://github.com/mastervb99/meteo-martinique.git
 cd martinique_weather
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Configure environment
 cp .env.example .env
-# Edit .env with your Brevo API key
+# Edit .env with your API keys
 
-# Run API server
 python api.py
 # Open http://localhost:8000
 ```
@@ -67,6 +68,7 @@ python api.py
 4. Add environment variables:
    - `BREVO_API_KEY=your_key`
    - `STRIPE_SECRET_KEY=sk_live_...`
+   - `STRIPE_PUBLISHABLE_KEY=pk_live_...`
 5. Deploy
 
 ## Configuration
@@ -82,6 +84,7 @@ BREVO_SMS_SENDER=MeteoMQ
 
 # Stripe (Payments) - Required for subscriptions
 STRIPE_SECRET_KEY=sk_live_...
+STRIPE_PUBLISHABLE_KEY=pk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...  # Optional
 
 # Météo France - Optional (for live data)
@@ -122,7 +125,9 @@ METEO_FRANCE_API_KEY=your_api_key
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/stripe/config` | GET | Get pricing info |
-| `/api/stripe/checkout` | POST | Create checkout session |
+| `/api/stripe/create-payment-intent` | POST | Create PaymentIntent (embedded) |
+| `/api/stripe/confirm-payment` | POST | Confirm payment + activate |
+| `/api/stripe/checkout` | POST | Create checkout session (legacy) |
 | `/api/stripe/verify/{session_id}` | GET | Verify payment |
 | `/api/stripe/webhook` | POST | Handle Stripe webhooks |
 | `/api/stripe/status` | GET | Check subscription status |
@@ -149,7 +154,9 @@ martinique_weather/
 ├── chart_generator.py     # Plotly charts
 ├── scheduler.py           # Automated updates
 ├── static/
-│   ├── alerte.html        # Subscription page (/)
+│   ├── alerte.html        # Landing page with plan selection
+│   ├── alerte-sms.html    # SMS subscription + embedded payment
+│   ├── alerte-email.html  # Email subscription + embedded payment
 │   ├── aujourdhui.html    # Today's weather
 │   ├── previsions.html    # 7-day forecast
 │   ├── cartes.html        # Maps page
@@ -191,6 +198,6 @@ docker-compose logs -f martinique-weather
 
 ---
 
-**Version:** 2.2
+**Version:** 2.3
 **Author:** Vafa Bayat
-**Last Updated:** 2025-12-19
+**Last Updated:** 2025-12-20

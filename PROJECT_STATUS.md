@@ -1,16 +1,16 @@
 # Project Status: Martinique Weather Dashboard
 
-**Last Updated:** 2025-12-19
+**Last Updated:** 2025-12-20
 **Upwork Job:** Météo France API weather data extraction and visualization for Martinique
 **Client:** Remi
-**Status:** DEPLOYED - Full Weather Dashboard + SMS/Email Alerts + Stripe Payments
-**Version:** 2.2
+**Status:** DEPLOYED - Full Weather Dashboard + SMS/Email Alerts + Embedded Stripe Payments
+**Version:** 2.3
 
 ---
 
 ## Quick Context
 
-Weather data extraction, visualization, and alert notification system for Martinique using Météo France API. Includes full weather dashboard, SMS/Email subscription system with Brevo integration, and Stripe payment processing for subscriptions.
+Weather data extraction, visualization, and alert notification system for Martinique using Météo France API. Includes full weather dashboard, separate SMS/Email subscription pages with embedded Stripe payment (no redirect), and Brevo integration for notifications.
 
 ### Live URLs
 
@@ -19,58 +19,71 @@ Weather data extraction, visualization, and alert notification system for Martin
 
 ---
 
-## Current Status (2025-12-19)
+## Current Status (2025-12-20)
 
 ### Completed Features
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Weather Dashboard | LIVE | 4 pages: Aujourd'hui, Prévisions, Cartes, Alertes |
-| SMS Alerts (Brevo) | LIVE | Brevo API key configured |
+| SMS Subscription Page | LIVE | Separate page with embedded Stripe payment |
+| Email Subscription Page | LIVE | Separate page with embedded Stripe payment |
+| Embedded Stripe Payment | LIVE | Payment form on page, no redirect |
+| SMS Alerts (Brevo) | LIVE | Brevo API configured |
 | Email Alerts (Brevo) | LIVE | Same Brevo integration |
-| Subscription Flow | LIVE | Simplified (no OTP) |
 | Interactive Maps | LIVE | Vigilance, Forecast, Rain maps |
 | Weather Charts | LIVE | Temperature, City Comparison, Hourly |
 | Demo Data Generator | LIVE | /api/generate/demo endpoint |
-| Stripe Payments | LIVE | SMS €4.99/mo, Email €10/yr |
 
 ### Pages
 
 | Page | Route | Description |
 |------|-------|-------------|
+| Alertes (Landing) | `/` | Plan selection - links to SMS/Email pages |
+| Alertes SMS | `/alerte-sms` | Phone input + embedded Stripe payment (€4.99/mo) |
+| Alertes Email | `/alerte-email` | Email input + embedded Stripe payment (€10/yr) |
 | Aujourd'hui | `/aujourd-hui` | Today's weather for all cities |
 | Prévisions | `/previsions` | 7-day forecast with charts |
 | Cartes | `/cartes` | Interactive maps + charts |
-| Alertes | `/` | SMS/Email subscription |
+| Success | `/success` | Payment confirmation page |
 
 ---
 
 ## Recent Changes
 
+### 2025-12-20: Separate SMS/Email Pages + Embedded Stripe Payment
+
+1. **Separate subscription pages** - SMS and Email now have dedicated pages
+   - `/alerte-sms` - Phone number + profile + embedded payment
+   - `/alerte-email` - Email address + profile + embedded payment
+2. **Embedded Stripe Payment** - Payment form directly on page using Stripe Elements
+   - No more redirect to Stripe Checkout
+   - PaymentIntent API for secure embedded payment
+3. **Landing page redesign** - Main `/` page shows two plan cards linking to subscription pages
+4. **New API endpoints**:
+   - `POST /api/stripe/create-payment-intent` - Create PaymentIntent for embedded form
+   - `POST /api/stripe/confirm-payment` - Confirm payment and activate subscription
+
 ### 2025-12-19: Stripe Payment Integration
 
-1. **Added Stripe payment processing** for subscriptions
-2. **Two pricing tiers**: SMS €4.99/month, Email €10/year
-3. **Stripe Checkout integration** - Secure hosted payment page
-4. **Payment success page** - Confirms subscription activation
-5. **Webhook support** - Handles payment events
+1. Added Stripe payment processing for subscriptions
+2. Two pricing tiers: SMS €4.99/month, Email €10/year
+3. Webhook support for payment events
 
-### 2025-12-18: Brevo Integration + OTP Removal
+### 2025-12-18: Brevo Integration + Dashboard Pages
 
-1. **Replaced Twilio with Brevo** for SMS + Email
-2. **Removed OTP verification** - Direct subscription flow
-3. **Added weather dashboard pages** (Aujourd'hui, Prévisions, Cartes)
-4. **Fixed chart legend overlap** - Legends now below charts
-5. **Fixed hourly data generation** - Now generates for all 10 cities
-6. **Fixed accented city names** - Le François, Trinité work correctly
+1. Replaced Twilio with Brevo for SMS + Email
+2. Removed OTP verification - Direct subscription flow
+3. Added weather dashboard pages (Aujourd'hui, Prévisions, Cartes)
+4. Fixed chart legend overlap and hourly data generation
 
 ### Environment Variables Required
 
 ```
 BREVO_API_KEY=xsmtpsib-...
 STRIPE_SECRET_KEY=sk_live_...
-STRIPE_PUBLISHABLE_KEY=pk_live_... (optional, for client-side)
-STRIPE_WEBHOOK_SECRET=whsec_... (optional, for webhook verification)
+STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_... (optional)
 ```
 
 ---
@@ -82,13 +95,21 @@ STRIPE_WEBHOOK_SECRET=whsec_... (optional, for webhook verification)
 │  Frontend       │────▶│  FastAPI     │────▶│  Brevo          │
 │  (HTML + JS)    │     │  (api.py)    │     │  (SMS + Email)  │
 └─────────────────┘     └──────────────┘     └─────────────────┘
-                              │                      │
-              ┌───────────────┼───────────────┐      │
-              ▼               ▼               ▼      ▼
-        ┌──────────┐   ┌──────────┐   ┌──────────┐ ┌──────────┐
-        │ SQLite   │   │ Maps     │   │ Charts   │ │ Stripe   │
-        │ (subs)   │   │ (Folium) │   │ (Plotly) │ │ (Pay)    │
-        └──────────┘   └──────────┘   └──────────┘ └──────────┘
+        │                      │
+        │              ┌───────┼───────────────┐
+        │              ▼       ▼               ▼
+        │        ┌──────────┐ ┌──────────┐ ┌──────────┐
+        │        │ SQLite   │ │ Maps     │ │ Charts   │
+        │        │ (subs)   │ │ (Folium) │ │ (Plotly) │
+        │        └──────────┘ └──────────┘ └──────────┘
+        │
+        └──────▶ Stripe Elements (Embedded Payment)
+                        │
+                        ▼
+                 ┌──────────────┐
+                 │ Stripe API   │
+                 │ (PaymentIntent)│
+                 └──────────────┘
 ```
 
 ---
@@ -127,8 +148,10 @@ STRIPE_WEBHOOK_SECRET=whsec_... (optional, for webhook verification)
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/stripe/config` | GET | Get Stripe publishable key + prices |
-| `/api/stripe/checkout` | POST | Create checkout session |
-| `/api/stripe/verify/{session_id}` | GET | Verify payment |
+| `/api/stripe/create-payment-intent` | POST | Create PaymentIntent (embedded) |
+| `/api/stripe/confirm-payment` | POST | Confirm payment + activate subscription |
+| `/api/stripe/checkout` | POST | Create checkout session (legacy redirect) |
+| `/api/stripe/verify/{session_id}` | GET | Verify checkout session |
 | `/api/stripe/webhook` | POST | Handle Stripe webhooks |
 | `/api/stripe/status` | GET | Check subscription status |
 
@@ -148,7 +171,7 @@ martinique_weather/
 ├── api.py                 # FastAPI REST API
 ├── config.py              # Configuration
 ├── brevo_service.py       # Brevo SMS + Email
-├── stripe_service.py      # Stripe payment processing
+├── stripe_service.py      # Stripe payment (PaymentIntent + Checkout)
 ├── subscriptions.py       # SQLite subscription management
 ├── alert_broadcaster.py   # Alert broadcasting
 ├── weather_extractor.py   # Météo France API
@@ -156,7 +179,9 @@ martinique_weather/
 ├── chart_generator.py     # Plotly charts
 ├── scheduler.py           # Automated updates
 ├── static/
-│   ├── alerte.html        # Subscription page (/)
+│   ├── alerte.html        # Landing page with plan selection
+│   ├── alerte-sms.html    # SMS subscription + embedded payment
+│   ├── alerte-email.html  # Email subscription + embedded payment
 │   ├── aujourdhui.html    # Today's weather
 │   ├── previsions.html    # 7-day forecast
 │   ├── cartes.html        # Maps page
@@ -169,50 +194,23 @@ martinique_weather/
 
 ---
 
-## Next Steps
+## Subscription Flow
 
-### Awaiting Client Feedback
+### SMS Subscription (€4.99/month)
+1. User visits `/alerte-sms`
+2. Enters phone number, email (for invoice), and profile
+3. Stripe Payment Element loads automatically
+4. User enters card details and clicks "Payer"
+5. Payment processed via PaymentIntent (no redirect)
+6. Subscription created, welcome SMS sent
 
-1. **Test payment flow** - Complete a test subscription via Stripe
-2. **Test SMS delivery** - Verify SMS alerts are received
-3. **Test Email delivery** - Verify email alerts are received
-4. **Review pricing** - Confirm €4.99/mo SMS and €10/yr Email
-
-### Potential Enhancements (If Requested)
-
-1. **Real Météo France data** - Connect to live API (needs credentials)
-2. **Automated scheduler** - CRON job for regular data updates
-3. **WhatsApp integration** - Via Brevo if needed
-4. **Custom domain** - Deploy to o2switch with client domain
-5. **Admin panel** - View subscribers, manage payments
-6. **Stripe webhook** - Set up for subscription lifecycle events
-
----
-
-## Configuration
-
-### Required Environment Variables
-
-```bash
-# Brevo (SMS + Email)
-BREVO_API_KEY=your_brevo_api_key
-
-# Stripe (Payments)
-STRIPE_SECRET_KEY=sk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...  # Optional
-
-# Météo France (for live data) - Optional
-METEO_FRANCE_APP_ID=your_app_id
-METEO_FRANCE_API_KEY=your_api_key
-```
-
-### Render.com Setup
-
-1. Connect GitHub repo
-2. Add environment variables:
-   - `BREVO_API_KEY`
-   - `STRIPE_SECRET_KEY`
-3. Deploy
+### Email Subscription (€10/year)
+1. User visits `/alerte-email`
+2. Enters email address and profile
+3. Stripe Payment Element loads automatically
+4. User enters card details and clicks "Payer"
+5. Payment processed via PaymentIntent (no redirect)
+6. Subscription created, welcome email sent
 
 ---
 
@@ -224,6 +222,7 @@ METEO_FRANCE_API_KEY=your_api_key
 | 2025-12-17 | SMS mockup received, backend built, deployed to Render |
 | 2025-12-18 | Brevo integration, OTP removed, dashboard pages added |
 | 2025-12-19 | Stripe payment integration (SMS €4.99/mo, Email €10/yr) |
+| 2025-12-20 | Separate SMS/Email pages, embedded Stripe payment (no redirect) |
 
 ---
 
