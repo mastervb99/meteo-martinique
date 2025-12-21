@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alertes Email - 10 EUR/an | Meteo Martinique</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    :root{--bg:#f4f8fb;--surface:#ffffff;--text:#0b1220;--muted:#66768a;--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.06);--shadow:0 16px 40px rgba(15,23,42,.10);--shadowSoft:0 10px 26px rgba(15,23,42,.08);--radius:18px;--radiusL:22px;--green:#22c55e;--greenDark:#16a34a;--cyan:#06b6d4;--danger:#ef4444;--ok:#22c55e;--ink:#0f172a;}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);background:radial-gradient(900px 500px at 10% 0%,rgba(34,197,94,.10),transparent 60%),radial-gradient(900px 500px at 90% 0%,rgba(6,182,212,.10),transparent 55%),var(--bg);}
+    .container{max-width:640px;margin:0 auto;padding:22px 18px 44px;}
+    header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.72);backdrop-filter:blur(12px);border-bottom:1px solid var(--border2);}
+    .header-inner{max-width:1320px;margin:0 auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
+    .brand{display:flex;align-items:center;gap:12px;}
+    .brand-badge{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:#fff;font-weight:900;background:linear-gradient(135deg,var(--green),var(--cyan));box-shadow:0 14px 28px rgba(34,197,94,.18);}
+    .brand-title{display:flex;flex-direction:column;line-height:1.1;}
+    .brand-title strong{font-size:20px;font-weight:900;letter-spacing:-.02em;}
+    .brand-title span{font-size:12px;color:var(--muted);font-weight:600;}
+    nav{display:flex;gap:22px;align-items:center;}
+    nav a{text-decoration:none;color:#334155;font-weight:800;font-size:14px;padding:10px 12px;border-radius:12px;transition:.15s ease;}
+    nav a:hover{background:rgba(34,197,94,.08);color:#16a34a;}
+    nav a.active{background:rgba(34,197,94,.12);color:#16a34a;}
+    .card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radiusL);box-shadow:var(--shadowSoft);overflow:hidden;}
+    .hero-bar{background:linear-gradient(90deg,var(--green),var(--cyan));color:#fff;padding:22px;text-align:center;}
+    .hero-bar h1{margin:0;font-size:24px;font-weight:950;letter-spacing:-.02em;}
+    .hero-bar p{margin:8px 0 0;opacity:.95;font-weight:600;}
+    .price-tag{display:inline-block;margin-top:12px;background:rgba(255,255,255,.2);padding:8px 16px;border-radius:999px;font-weight:950;font-size:20px;}
+    .badge-eco{display:inline-block;margin-left:8px;background:rgba(255,255,255,.3);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800;}
+    .body{padding:24px;}
+    .field{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+    .label{font-size:13px;font-weight:900;color:#334155;letter-spacing:.02em;}
+    .control{border-radius:14px;border:1px solid rgba(15,23,42,.12);background:#fff;padding:14px;font-weight:700;color:var(--ink);outline:none;font-size:16px;width:100%;}
+    .control:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(34,197,94,.1);}
+    select.control{cursor:pointer;}
+    .help{font-size:12px;color:var(--muted);font-weight:700;line-height:1.6;}
+    .divider{height:1px;background:rgba(15,23,42,.08);margin:20px 0;}
+    .consent{display:flex;gap:10px;align-items:flex-start;padding:14px;border-radius:14px;border:1px solid rgba(34,197,94,.16);background:rgba(34,197,94,.06);font-weight:700;color:#16a34a;font-size:14px;margin-bottom:16px;}
+    .consent input{margin-top:2px;accent-color:#22c55e;width:18px;height:18px;}
+    #payment-element{padding:16px;border:1px solid var(--border);border-radius:14px;background:#fafbfc;margin-bottom:16px;}
+    .btn{border:0;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;padding:16px 24px;border-radius:14px;font-weight:900;cursor:pointer;width:100%;font-size:16px;box-shadow:0 16px 30px rgba(34,197,94,.18);transition:transform .12s ease,filter .12s ease;}
+    .btn:hover{filter:brightness(.98);transform:translateY(-1px);}
+    .btn:active{transform:translateY(0);}
+    .btn[disabled]{opacity:.55;cursor:not-allowed;transform:none;filter:none;box-shadow:none;}
+    .toast{display:none;margin-top:16px;padding:14px;border-radius:14px;border:1px solid rgba(15,23,42,.10);background:#fff;font-weight:800;text-align:center;}
+    .toast.ok{display:block;border-color:rgba(34,197,94,.22);background:rgba(34,197,94,.08);color:#15803d;}
+    .toast.err{display:block;border-color:rgba(239,68,68,.22);background:rgba(239,68,68,.08);color:#b91c1c;}
+    .toast.info{display:block;border-color:rgba(34,197,94,.18);background:rgba(34,197,94,.06);color:#16a34a;}
+    .features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+    .feature{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#334155;}
+    .feature svg{width:18px;height:18px;color:var(--ok);}
+    .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-weight:700;font-size:14px;text-decoration:none;margin-bottom:16px;}
+    .back-link:hover{color:var(--green);}
+    .email-preview{border-radius:14px;background:#f8fafc;border:1px solid var(--border);padding:16px;margin-top:20px;}
+    .email-preview-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+    .email-preview-subject{font-weight:900;color:var(--ink);}
+    .email-preview-from{font-size:12px;color:var(--muted);}
+    .email-preview-body{font-size:14px;line-height:1.7;color:#334155;}
+    .email-preview-body strong{color:var(--ink);}
+    @media(max-width:600px){nav{display:none;}.features{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-badge">M</div>
+      <div class="brand-title"><strong>Meteo Martinique</strong><span>Previsions & vigilance en temps reel</span></div>
+    </div>
+    <nav>
+      <a href="/aujourd-hui">Aujourd'hui</a>
+      <a href="/previsions">Previsions</a>
+      <a href="/cartes">Cartes</a>
+      <a class="active" href="/">Alertes</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <a href="/" class="back-link"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Retour aux alertes</a>
+
+  <div class="card">
+    <div class="hero-bar">
+      <h1>Alertes Email</h1>
+      <p>Alertes meteo detaillees dans votre boite mail</p>
+      <div class="price-tag">10 EUR / an <span class="badge-eco">Economique</span></div>
+    </div>
+
+    <div class="body">
+      <form id="payment-form">
+        <div class="field">
+          <label class="label" for="email">Adresse email</label>
+          <input id="email" class="control" type="email" placeholder="votre@email.fr" autocomplete="email" required>
+          <div class="help">Les alertes et factures seront envoyees a cette adresse.</div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="profile">Profil</label>
+          <select id="profile" class="control">
+            <option>Particulier</option>
+            <option>Professionnel (BTP / agriculture)</option>
+            <option>Nautique / peche / plaisance</option>
+            <option>Tourisme / plages</option>
+          </select>
+          <div class="help">Le profil adapte les conseils dans les alertes.</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="label" style="margin-bottom:12px;">Paiement securise</div>
+        <div id="payment-element"></div>
+
+        <div class="consent">
+          <input type="checkbox" id="consent" required>
+          <label for="consent">J'accepte de recevoir des alertes meteo par email. Je peux me desinscrire a tout moment.</label>
+        </div>
+
+        <button id="submit-btn" class="btn" type="submit" disabled>
+          <span id="btn-text">Payer 10 EUR et s'abonner pour 1 an</span>
+        </button>
+
+        <div id="toast" class="toast"></div>
+      </form>
+
+      <div class="features">
+        <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Alertes detaillees</div>
+        <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Previsions completes</div>
+        <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Cartes incluses</div>
+        <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Resiliation libre</div>
+      </div>
+
+      <div class="email-preview">
+        <div class="email-preview-header">
+          <div>
+            <div class="email-preview-subject">ALERTE METEO - Vent Fort</div>
+            <div class="email-preview-from">De: alertes@meteo-martinique.fr</div>
+          </div>
+        </div>
+        <div class="email-preview-body">
+          <strong>Vigilance Orange - Vent Fort</strong><br><br>
+          Rafales attendues jusqu'a <strong>70 km/h</strong> sur l'ensemble de la Martinique entre 16h00 et 20h00.<br><br>
+          <strong>Conseils:</strong><br>
+          - Limitez vos deplacements<br>
+          - Securisez les objets exterieurs<br>
+          - Restez informes de l'evolution
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API_BASE = '/api';
+let stripe, elements, paymentElement;
+
+async function initStripe() {
+  const configRes = await fetch(API_BASE + '/stripe/config');
+  const config = await configRes.json();
+  stripe = Stripe(config.publishable_key);
+}
+
+function showToast(type, msg) {
+  const toast = document.getElementById('toast');
+  toast.className = 'toast ' + type;
+  toast.textContent = msg;
+}
+
+function clearToast() {
+  const toast = document.getElementById('toast');
+  toast.className = 'toast';
+  toast.textContent = '';
+}
+
+function isEmailValid(val) {
+  const v = (val || '').trim();
+  return v.includes('@') && v.includes('.');
+}
+
+async function createPaymentIntent() {
+  const email = document.getElementById('email').value.trim().toLowerCase();
+
+  const res = await fetch(API_BASE + '/stripe/create-payment-intent', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      plan_type: 'email_yearly',
+      email: email
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Erreur creation paiement');
+  }
+
+  return res.json();
+}
+
+async function setupPaymentForm() {
+  const email = document.getElementById('email');
+
+  if (!isEmailValid(email.value)) {
+    return;
+  }
+
+  try {
+    showToast('info', 'Chargement du formulaire de paiement...');
+    const intent = await createPaymentIntent();
+
+    elements = stripe.elements({
+      clientSecret: intent.client_secret,
+      appearance: {
+        theme: 'stripe',
+        variables: {
+          colorPrimary: '#22c55e',
+          borderRadius: '12px'
+        }
+      }
+    });
+
+    paymentElement = elements.create('payment');
+    paymentElement.mount('#payment-element');
+
+    paymentElement.on('ready', () => {
+      clearToast();
+      updateSubmitButton();
+    });
+
+    paymentElement.on('change', (event) => {
+      if (event.error) {
+        showToast('err', event.error.message);
+      } else {
+        clearToast();
+      }
+    });
+
+  } catch (err) {
+    showToast('err', err.message);
+  }
+}
+
+function updateSubmitButton() {
+  const email = document.getElementById('email');
+  const consent = document.getElementById('consent');
+  const submitBtn = document.getElementById('submit-btn');
+
+  const valid = isEmailValid(email.value) && consent.checked && paymentElement;
+  submitBtn.disabled = !valid;
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+
+  const submitBtn = document.getElementById('submit-btn');
+  const btnText = document.getElementById('btn-text');
+
+  submitBtn.disabled = true;
+  btnText.textContent = 'Traitement en cours...';
+
+  try {
+    const {error, paymentIntent} = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: window.location.origin + '/success'
+      },
+      redirect: 'if_required'
+    });
+
+    if (error) {
+      showToast('err', error.message);
+      submitBtn.disabled = false;
+      btnText.textContent = 'Payer 10 EUR et s\'abonner pour 1 an';
+      return;
+    }
+
+    if (paymentIntent && paymentIntent.status === 'succeeded') {
+      const confirmRes = await fetch(API_BASE + '/stripe/confirm-payment?payment_intent_id=' + paymentIntent.id, {
+        method: 'POST'
+      });
+
+      const result = await confirmRes.json();
+
+      if (result.paid) {
+        showToast('ok', 'Paiement reussi! Abonnement active. Vous recevrez un email de bienvenue.');
+        btnText.textContent = 'Abonnement active';
+
+        if (result.reference_code) {
+          setTimeout(() => {
+            showToast('ok', 'Reference: ' + result.reference_code + ' - Conservez ce code pour gerer votre abonnement.');
+          }, 2000);
+        }
+      } else {
+        showToast('err', 'Paiement en attente de confirmation.');
+      }
+    }
+
+  } catch (err) {
+    showToast('err', err.message || 'Erreur de paiement');
+    submitBtn.disabled = false;
+    btnText.textContent = 'Payer 10 EUR et s\'abonner pour 1 an';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await initStripe();
+
+  const email = document.getElementById('email');
+  const consent = document.getElementById('consent');
+  const form = document.getElementById('payment-form');
+
+  let debounceTimer;
+
+  function onInputChange() {
+    clearTimeout(debounceTimer);
+    if (isEmailValid(email.value) && !paymentElement) {
+      debounceTimer = setTimeout(setupPaymentForm, 500);
+    }
+    updateSubmitButton();
+  }
+
+  email.addEventListener('input', onInputChange);
+  consent.addEventListener('change', updateSubmitButton);
+  form.addEventListener('submit', handleSubmit);
+});
+</script>
+</body>
+</html>

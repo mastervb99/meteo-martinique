@@ -3,384 +3,259 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Alertes SMS — Martinique | Météo Martinique</title>
-
+  <title>Alertes Meteo | Meteo Martinique</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
   <style>
-    :root{
-      --bg:#f4f8fb;--surface:#ffffff;--text:#0b1220;--muted:#66768a;
-      --border: rgba(15,23,42,.10);--border2: rgba(15,23,42,.06);
-      --shadow: 0 16px 40px rgba(15,23,42,.10);--shadowSoft: 0 10px 26px rgba(15,23,42,.08);
-      --radius:18px;--radiusL:22px;
-      --blue:#2563eb;--cyan:#06b6d4;--sky:#0ea5e9;
-      --danger:#ef4444;--warning:#f97316;--minor:#eab308;--ok:#22c55e;
-      --ink:#0f172a;
-    }
+    :root{--bg:#f4f8fb;--surface:#ffffff;--text:#0b1220;--muted:#66768a;--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.06);--shadow:0 16px 40px rgba(15,23,42,.10);--shadowSoft:0 10px 26px rgba(15,23,42,.08);--radius:18px;--radiusL:22px;--blue:#2563eb;--cyan:#06b6d4;--green:#22c55e;--danger:#ef4444;--ink:#0f172a;}
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);
-      background:radial-gradient(900px 500px at 10% 0%, rgba(37,99,235,.10), transparent 60%),radial-gradient(900px 500px at 90% 0%, rgba(6,182,212,.10), transparent 55%),var(--bg);}
-    .container{max-width:1320px;margin:0 auto;padding:22px 18px 44px;}
-    .stack{display:flex;flex-direction:column;gap:18px;}
-    header{position:sticky;top:0;z-index:50;background: rgba(255,255,255,.72);backdrop-filter: blur(12px);border-bottom: 1px solid var(--border2);}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);background:radial-gradient(900px 500px at 10% 0%,rgba(37,99,235,.10),transparent 60%),radial-gradient(900px 500px at 90% 0%,rgba(6,182,212,.10),transparent 55%),var(--bg);}
+    .container{max-width:1000px;margin:0 auto;padding:22px 18px 44px;}
+    header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.72);backdrop-filter:blur(12px);border-bottom:1px solid var(--border2);}
     .header-inner{max-width:1320px;margin:0 auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
-    .brand{display:flex;align-items:center;gap:12px;min-width:260px;}
-    .brand-badge{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:#fff;font-weight:900;background: linear-gradient(135deg, var(--blue), var(--cyan));box-shadow: 0 14px 28px rgba(37,99,235,.18);}
+    .brand{display:flex;align-items:center;gap:12px;}
+    .brand-badge{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:#fff;font-weight:900;background:linear-gradient(135deg,var(--blue),var(--cyan));box-shadow:0 14px 28px rgba(37,99,235,.18);}
     .brand-title{display:flex;flex-direction:column;line-height:1.1;}
     .brand-title strong{font-size:20px;font-weight:900;letter-spacing:-.02em;}
     .brand-title span{font-size:12px;color:var(--muted);font-weight:600;}
     nav{display:flex;gap:22px;align-items:center;}
     nav a{text-decoration:none;color:#334155;font-weight:800;font-size:14px;padding:10px 12px;border-radius:12px;transition:.15s ease;}
-    nav a:hover{background: rgba(37,99,235,.08); color:#1d4ed8;}
-    nav a.active{background: rgba(37,99,235,.12); color:#1d4ed8;}
-    .actions{display:flex;align-items:center;gap:10px;min-width:360px;justify-content:flex-end;}
-    .search-pill{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;border:1px solid var(--border2);background: rgba(255,255,255,.9);box-shadow: 0 1px 2px rgba(0,0,0,.03);font-weight:800;color:#334155;min-width:280px;}
-    .search-pill input{border:0;outline:none;background:transparent;width:100%;font:inherit;color:var(--ink);font-weight:800;}
-    .search-pill input::placeholder{color:#7b8aa0;font-weight:700;}
-    .btn{border:1px solid transparent;background: linear-gradient(135deg, #0ea5e9, #2563eb);color:#fff;padding:10px 14px;border-radius:14px;font-weight:900;cursor:pointer;white-space:nowrap;box-shadow: 0 16px 30px rgba(14,165,233,.18);transition: transform .12s ease, filter .12s ease;}
-    .btn:hover{filter:brightness(.98); transform: translateY(-1px);}
-    .btn:active{transform: translateY(0px);}
-    .btn[disabled]{opacity:.55;cursor:not-allowed;transform:none;filter:none;box-shadow:none;}
-    .btn-soft{border: 1px solid rgba(37,99,235,.18);background: rgba(255,255,255,.85);color:#1d4ed8;padding:10px 12px;border-radius:14px;font-weight:900;cursor:pointer;}
+    nav a:hover{background:rgba(37,99,235,.08);color:#1d4ed8;}
+    nav a.active{background:rgba(37,99,235,.12);color:#1d4ed8;}
+
+    .hero{text-align:center;padding:48px 24px;background:linear-gradient(135deg,rgba(37,99,235,.08),rgba(6,182,212,.08));border-radius:var(--radiusL);margin-bottom:32px;}
+    .hero h1{margin:0;font-size:36px;font-weight:950;letter-spacing:-.03em;background:linear-gradient(135deg,var(--blue),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .hero p{margin:12px 0 0;font-size:18px;color:var(--muted);font-weight:600;max-width:500px;margin-left:auto;margin-right:auto;}
+
+    .plans{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px;}
+    .plan-card{background:var(--surface);border-radius:var(--radiusL);overflow:hidden;box-shadow:var(--shadow);border:2px solid transparent;transition:transform .2s ease,border-color .2s ease;}
+    .plan-card:hover{transform:translateY(-4px);}
+    .plan-card.sms{border-color:rgba(37,99,235,.2);}
+    .plan-card.sms:hover{border-color:rgba(37,99,235,.4);}
+    .plan-card.email{border-color:rgba(34,197,94,.2);}
+    .plan-card.email:hover{border-color:rgba(34,197,94,.4);}
+
+    .plan-header{padding:24px;text-align:center;}
+    .plan-header.sms{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;}
+    .plan-header.email{background:linear-gradient(135deg,var(--green),var(--cyan));color:#fff;}
+    .plan-icon{width:56px;height:56px;background:rgba(255,255,255,.2);border-radius:16px;display:grid;place-items:center;margin:0 auto 12px;font-size:28px;}
+    .plan-title{margin:0;font-size:24px;font-weight:950;}
+    .plan-price{margin:8px 0 0;font-size:32px;font-weight:950;}
+    .plan-price span{font-size:16px;opacity:.8;font-weight:700;}
+    .plan-badge{display:inline-block;margin-top:8px;background:rgba(255,255,255,.25);padding:4px 12px;border-radius:999px;font-size:12px;font-weight:800;}
+
+    .plan-body{padding:24px;}
+    .plan-features{list-style:none;margin:0;padding:0;}
+    .plan-features li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border2);font-weight:700;color:#334155;}
+    .plan-features li:last-child{border-bottom:0;}
+    .plan-features svg{width:20px;height:20px;flex-shrink:0;}
+    .plan-features .sms-check{color:var(--blue);}
+    .plan-features .email-check{color:var(--green);}
+
+    .plan-cta{padding:0 24px 24px;}
+    .btn{display:block;text-align:center;text-decoration:none;border:0;padding:16px 24px;border-radius:14px;font-weight:900;cursor:pointer;width:100%;font-size:16px;transition:transform .12s ease,filter .12s ease;}
+    .btn:hover{filter:brightness(.98);transform:translateY(-2px);}
+    .btn.sms{background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;box-shadow:0 16px 30px rgba(14,165,233,.18);}
+    .btn.email{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 16px 30px rgba(34,197,94,.18);}
+
+    .manage-section{background:var(--surface);border-radius:var(--radiusL);padding:24px;box-shadow:var(--shadowSoft);}
+    .manage-section h2{margin:0 0 8px;font-size:18px;font-weight:900;}
+    .manage-section p{margin:0 0 16px;color:var(--muted);font-weight:600;font-size:14px;}
+    .manage-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .field{display:flex;flex-direction:column;gap:6px;}
+    .label{font-size:12px;font-weight:900;color:#334155;}
+    .control{border-radius:12px;border:1px solid var(--border);background:#fff;padding:12px;font-weight:700;color:var(--ink);outline:none;}
+    .control:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+    .manage-btns{display:flex;gap:10px;margin-top:16px;}
+    .btn-soft{border:1px solid rgba(37,99,235,.18);background:rgba(255,255,255,.85);color:#1d4ed8;padding:12px 16px;border-radius:12px;font-weight:900;cursor:pointer;}
     .btn-soft:hover{background:#fff;}
-    .btn-soft[disabled]{opacity:.55;cursor:not-allowed;}
-    .btn-danger{background: linear-gradient(90deg, #f97316, #ef4444);box-shadow: 0 16px 30px rgba(239,68,68,.16);}
-    .card{background: var(--surface);border: 1px solid var(--border2);border-radius: var(--radiusL);box-shadow: var(--shadowSoft);}
-    .section{padding:20px;}
-    .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px;}
-    .section-title{margin:0;font-size:18px;font-weight:900;letter-spacing:-.02em;}
-    .section-sub{margin:6px 0 0;color:var(--muted);font-weight:600;font-size:13px;}
-    .meta-chip{background: rgba(255,255,255,.65);border: 1px solid rgba(255,255,255,.35);padding:10px 12px;border-radius:14px;font-weight:900;white-space:nowrap;}
-    .hero{overflow:hidden;border-radius: var(--radiusL);border: 1px solid rgba(37,99,235,.18);box-shadow: var(--shadow);}
-    .hero-bar{background: linear-gradient(90deg, var(--blue), var(--cyan));color:#fff;padding:22px 22px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
-    .hero-bar h1{margin:0;font-size:22px;font-weight:950;letter-spacing:-.02em;}
-    .hero-bar p{margin:6px 0 0;opacity:.95;font-weight:600;}
-    .hero-body{background:#fff;padding:18px;display:grid;grid-template-columns: 1.1fr .9fr;gap:16px;}
-    .form{border-radius:16px;border: 1px solid rgba(15,23,42,.08);padding:16px;background: rgba(15,23,42,.02);}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-    .field{display:flex;flex-direction:column;gap:8px;}
-    .label{font-size:12px;font-weight:900;color:#334155;letter-spacing:.02em;}
-    .control{border-radius:14px;border:1px solid rgba(15,23,42,.10);background:#fff;padding:12px 12px;font-weight:800;color:var(--ink);outline:none;}
-    select.control{cursor:pointer;}
-    .help{font-size:12px;color:var(--muted);font-weight:700;line-height:1.6;}
-    .divider{height:1px;background: rgba(15,23,42,.08);margin:14px 0;}
-    .consent{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:14px;border:1px solid rgba(37,99,235,.16);background: rgba(37,99,235,.06);font-weight:800;color:#1d4ed8;}
-    .consent input{margin-top:2px;accent-color:#2563eb;}
-    .cta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
-    .stepper{display:flex;gap:10px;flex-wrap:wrap;margin: 0 0 10px;}
-    .step{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:999px;border:1px solid rgba(15,23,42,.10);background:#fff;font-weight:950;color:#334155;}
-    .step .n{width:26px;height:26px;border-radius:999px;display:grid;place-items:center;background: rgba(37,99,235,.10);color:#1d4ed8;border:1px solid rgba(37,99,235,.16);font-weight:950;}
-    .step.active{border-color: rgba(37,99,235,.22);background: rgba(37,99,235,.06);color:#1d4ed8;}
-    .step.done .n{background: rgba(34,197,94,.12);border-color: rgba(34,197,94,.20);color:#16a34a;}
-    .otp-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
-    .otp{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
-    .otp input{width: 220px;letter-spacing: .18em;text-align:center;font-variant-numeric: tabular-nums;}
-    .toast{display:none;margin-top:12px;padding:12px 12px;border-radius:14px;border:1px solid rgba(15,23,42,.10);background:#fff;font-weight:850;}
-    .toast.ok{display:block;border-color: rgba(34,197,94,.22);background: rgba(34,197,94,.08);color:#15803d;}
-    .toast.err{display:block;border-color: rgba(239,68,68,.22);background: rgba(239,68,68,.08);color:#b91c1c;}
-    .toast.info{display:block;border-color: rgba(37,99,235,.18);background: rgba(37,99,235,.06);color:#1d4ed8;}
-    .side{display:flex;flex-direction:column;gap:14px;}
-    .panel{border-radius:16px;border: 1px solid rgba(37,99,235,.10);background:#eff7ff;padding:16px;}
-    .panel h3{margin:0 0 10px;font-size:15px;font-weight:950;display:flex;align-items:center;gap:10px;}
-    .rows{display:flex;flex-direction:column;gap:10px;}
-    .row{display:flex;justify-content:space-between;align-items:baseline;padding-top:10px;border-top:1px dashed rgba(37,99,235,.18);font-weight:800;}
-    .row:first-child{border-top:0;padding-top:0}
-    .row .k{color:#334155;opacity:.9;}
-    .row .v{font-size:16px;font-weight:950;}
-    .sms-preview{border-radius:16px;border:1px solid rgba(15,23,42,.10);background:#0b1220;color:#e2e8f0;padding:16px;box-shadow: 0 14px 28px rgba(15,23,42,.18);}
-    .bubble{max-width: 520px;background: rgba(226,232,240,.10);border: 1px solid rgba(226,232,240,.12);border-radius:16px;padding:12px 12px;font-weight:700;line-height:1.6;}
-    .bubble strong{color:#fff;}
-    .bubble .tagline{color: rgba(226,232,240,.78);font-weight:700;font-size:12px;margin-top:8px;}
-    .pricing{display:grid;grid-template-columns: repeat(2, 1fr);gap:14px;}
-    .plan{padding:16px;}
-    .plan .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
-    .badge{padding:6px 10px;border-radius:999px;font-weight:950;font-size:12px;color:#1d4ed8;background: rgba(37,99,235,.10);border:1px solid rgba(37,99,235,.16);white-space:nowrap;}
-    .price{font-size:30px;font-weight:950;letter-spacing:-.03em;margin:10px 0 6px;}
-    .plan ul{margin:10px 0 0;padding:0 0 0 18px;color:#334155;}
-    .plan li{margin:8px 0;font-weight:700;}
-    .plan .actions{min-width:auto;justify-content:flex-start;margin-top:12px;}
-    .faq{display:grid;grid-template-columns: 1fr 1fr;gap:14px;}
-    details{border:1px solid rgba(15,23,42,.08);background: rgba(15,23,42,.02);border-radius:16px;padding:14px 14px;}
-    summary{cursor:pointer;font-weight:950;list-style:none;}
+    .btn-danger{background:linear-gradient(90deg,#f97316,#ef4444);color:#fff;border:0;padding:12px 16px;border-radius:12px;font-weight:900;cursor:pointer;box-shadow:0 12px 24px rgba(239,68,68,.16);}
+    .toast{display:none;margin-top:16px;padding:12px;border-radius:12px;font-weight:800;text-align:center;}
+    .toast.ok{display:block;background:rgba(34,197,94,.08);color:#15803d;border:1px solid rgba(34,197,94,.22);}
+    .toast.err{display:block;background:rgba(239,68,68,.08);color:#b91c1c;border:1px solid rgba(239,68,68,.22);}
+
+    .faq{margin-top:32px;}
+    .faq h2{margin:0 0 16px;font-size:18px;font-weight:900;}
+    .faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    details{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:14px;}
+    summary{cursor:pointer;font-weight:900;list-style:none;}
     summary::-webkit-details-marker{display:none;}
     details p{margin:10px 0 0;color:var(--muted);font-weight:700;line-height:1.7;}
-    footer{margin-top: 26px;background: radial-gradient(1200px 600px at 20% 0%, rgba(37,99,235,.18), transparent 55%),radial-gradient(1200px 600px at 80% 0%, rgba(6,182,212,.18), transparent 55%),#0b1220;color:white;padding: 44px 18px 34px;}
-    .footer-grid{max-width: 1320px;margin:0 auto;display:grid;grid-template-columns: 1.2fr 1fr 1fr 1fr;gap:22px;}
-    footer h5{margin:0 0 10px;font-size:14px;font-weight:950;letter-spacing:.02em;}
-    footer p, footer a{margin:0;color: rgba(226,232,240,.86);font-weight:600;font-size:13px;text-decoration:none;line-height:1.8;}
-    .copy{max-width: 1320px;margin: 22px auto 0;padding-top: 18px;border-top: 1px solid rgba(148,163,184,.18);color: rgba(148,163,184,.92);font-weight:700;font-size:13px;text-align:center;}
-    @media (max-width: 1100px){nav{display:none;}.actions{min-width:auto;}.hero-body{grid-template-columns:1fr;}.pricing{grid-template-columns:1fr;}.faq{grid-template-columns:1fr;}.grid2{grid-template-columns:1fr;}.search-pill{min-width:220px;}.footer-grid{grid-template-columns:1fr; gap:16px;}.otp input{width: 100%;}}
+
+    footer{margin-top:32px;background:#0b1220;color:white;padding:32px 18px;border-radius:var(--radiusL);}
+    .footer-inner{max-width:1000px;margin:0 auto;text-align:center;}
+    footer p{margin:0;color:rgba(226,232,240,.7);font-weight:600;font-size:13px;}
+
+    @media(max-width:768px){nav{display:none;}.plans{grid-template-columns:1fr;}.manage-grid{grid-template-columns:1fr;}.faq-grid{grid-template-columns:1fr;}}
   </style>
 </head>
 <body>
-
 <header>
   <div class="header-inner">
     <div class="brand">
-      <div class="brand-badge">🌤️</div>
-      <div class="brand-title"><strong>Météo Martinique</strong><span>Prévisions & vigilance en temps réel</span></div>
+      <div class="brand-badge">M</div>
+      <div class="brand-title"><strong>Meteo Martinique</strong><span>Previsions & vigilance en temps reel</span></div>
     </div>
-    <nav aria-label="Navigation">
-      <a href="/aujourd-hui">Aujourd'hui</a><a href="/previsions">Prévisions</a><a href="/cartes">Cartes</a><a class="active" href="/">Alertes</a>
+    <nav>
+      <a href="/aujourd-hui">Aujourd'hui</a>
+      <a href="/previsions">Previsions</a>
+      <a href="/cartes">Cartes</a>
+      <a class="active" href="/">Alertes</a>
     </nav>
-    <div class="actions">
-      <div class="search-pill" role="search"><span aria-hidden="true">📍</span><input type="search" placeholder="Rechercher une ville ou une plage…" aria-label="Rechercher"><span style="opacity:.55" aria-hidden="true">⌕</span></div>
-      <button class="btn" type="button">🔔 Alertes</button>
-    </div>
   </div>
 </header>
 
 <main class="container">
-  <div class="stack">
-    <section class="hero">
-      <div class="hero-bar">
-        <div><h1>Alertes SMS — Martinique</h1><p>Recevez les alertes météo critiques sur votre téléphone.</p></div>
-        <div class="meta-chip">Inscription rapide</div>
-      </div>
-      <div class="hero-body">
-        <div class="form" aria-label="Formulaire d'abonnement SMS">
-          <div class="section-head" style="margin-bottom:10px;">
-            <div><h2 class="section-title">S'abonner aux alertes</h2><p class="section-sub">Couverture <b>Martinique entière</b> — <b>tous les phénomènes</b> météo à risque.</p></div>
-          </div>
-          <div class="grid2">
-            <div class="field"><div class="label">Numéro de téléphone</div><input id="phone" class="control" type="tel" placeholder="Ex : +596 696 12 34 56" autocomplete="tel" inputmode="tel"><div class="help">Format conseillé : +596 … (Martinique).</div></div>
-            <div class="field"><div class="label">Email (optionnel)</div><input id="email" class="control" type="email" placeholder="votre@email.fr" autocomplete="email"><div class="help">Pour recevoir les alertes par email.</div></div>
-          </div>
-          <div class="grid2">
-            <div class="field"><div class="label">Profil</div><select id="profile" class="control" aria-label="Profil"><option>Particulier</option><option>Professionnel (BTP / agriculture)</option><option>Nautique / pêche / plaisance</option><option>Tourisme / plages</option></select><div class="help">Le profil adapte le contenu des conseils.</div></div>
-            <div class="field"><div class="label">Notifications</div><select id="notifPref" class="control" aria-label="Type de notification"><option value="sms">SMS uniquement</option><option value="email">Email uniquement</option><option value="both">SMS + Email</option></select><div class="help">Choisissez comment recevoir les alertes.</div></div>
-          </div>
-          <div class="divider"></div>
-          <div class="field"><div class="label">Phénomènes couverts</div><div class="help">Orages & pluies | Vent fort | Houle/submersion | Cyclone | Chaleur<br><b>Tous inclus automatiquement.</b></div></div>
-          <div class="divider"></div>
-          <div class="consent"><input type="checkbox" id="consent"><label for="consent">J'accepte de recevoir des alertes météo. Je peux me désinscrire avec <b>STOP</b>.</label></div>
-          <div class="cta-row">
-            <button id="subscribeBtn" class="btn" type="button" disabled>S'abonner</button>
-            <button id="testAlert" class="btn btn-danger" type="button" style="display:none;">Tester une alerte</button>
-          </div>
-          <div id="toast" class="toast" role="status" aria-live="polite"></div>
-          <p class="help" style="margin-top:12px;" id="refCodeDisplay"></p>
-        </div>
-        <aside class="side">
-          <div class="panel"><h3>Fonctionnement</h3><div class="rows"><div class="row"><span class="k">Inscription</span><span class="v">Immédiate</span></div><div class="row"><span class="k">Couverture</span><span class="v">Martinique entière</span></div><div class="row"><span class="k">Désinscription</span><span class="v">STOP à tout moment</span></div></div></div>
-          <div class="panel" style="background:#fffbeb;border-color:rgba(234,179,8,.22)"><h3>Conseils rapides</h3><div class="help" style="margin:0;">Cyclone : lampe, eau, batteries, papiers.<br>Pluies : éviter ravines/routes inondées.<br>Vent fort : sécuriser objets extérieurs.</div></div>
-          <div class="sms-preview" aria-label="Aperçu d'un SMS"><div style="font-weight:950;margin-bottom:10px;">Aperçu SMS</div><div class="bubble" id="smsPreview"><strong>ALERTE VENT FORT</strong> — Martinique.<br>Rafales possibles jusqu'à <strong>70 km/h</strong> entre 16:00–20:00.<br>Conseil : limitez les déplacements et sécurisez les objets extérieurs.<div class="tagline">Météo Martinique | STOP pour se désinscrire</div></div></div>
-        </aside>
-      </div>
-    </section>
+  <div class="hero">
+    <h1>Alertes Meteo Martinique</h1>
+    <p>Recevez les alertes vigilance (orages, vent, houle, cyclone) directement sur votre telephone ou par email.</p>
+  </div>
 
-    <section class="card section">
-      <div class="section-head"><div><h2 class="section-title">Formules d'abonnement</h2><p class="section-sub">Choisissez votre formule d'alertes météo.</p></div></div>
-      <div class="pricing">
-        <div class="card plan" style="box-shadow:none;border-color:rgba(37,99,235,.18)"><div class="top"><div><div style="font-weight:950;">Alertes SMS</div><div class="help">Notifications instantanées</div></div><span class="badge">Recommandé</span></div><div class="price">4,99€<span style="font-size:14px;color:#64748b;font-weight:900;">/mois</span></div><div class="help">Couverture Martinique • Tous phénomènes</div><ul><li>Alertes SMS instantanées</li><li>Conseils adaptés à votre profil</li><li>Désinscription STOP</li><li>Paiement sécurisé Stripe</li></ul><div class="actions"><button class="btn" type="button" onclick="startCheckout('sms_monthly')">S'abonner SMS</button></div></div>
-        <div class="card plan" style="box-shadow:none;border-color:rgba(34,197,94,.18)"><div class="top"><div><div style="font-weight:950;">Alertes Email</div><div class="help">Économique & complet</div></div><span class="badge" style="background:rgba(34,197,94,.12);color:#16a34a;border-color:rgba(34,197,94,.20);">Économique</span></div><div class="price">10€<span style="font-size:14px;color:#64748b;font-weight:900;">/an</span></div><div class="help">Alertes détaillées par email</div><ul><li>Alertes email détaillées</li><li>Prévisions complètes</li><li>Résiliation à tout moment</li><li>Paiement sécurisé Stripe</li></ul><div class="actions"><button class="btn" type="button" style="background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 16px 30px rgba(34,197,94,.18);" onclick="startCheckout('email_yearly')">S'abonner Email</button></div></div>
+  <div class="plans">
+    <div class="plan-card sms">
+      <div class="plan-header sms">
+        <div class="plan-icon">SMS</div>
+        <h2 class="plan-title">Alertes SMS</h2>
+        <div class="plan-price">4,99 EUR<span>/mois</span></div>
+        <div class="plan-badge">Recommande</div>
       </div>
-      <div id="checkoutToast" class="toast" role="status" style="margin-top:12px;"></div>
-    </section>
+      <div class="plan-body">
+        <ul class="plan-features">
+          <li><svg class="sms-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Alertes SMS instantanees</li>
+          <li><svg class="sms-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Tous phenomenes meteo</li>
+          <li><svg class="sms-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Conseils adaptes au profil</li>
+          <li><svg class="sms-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Desinscription STOP</li>
+        </ul>
+      </div>
+      <div class="plan-cta">
+        <a href="/alerte-sms" class="btn sms">S'abonner aux alertes SMS</a>
+      </div>
+    </div>
 
-    <section class="card section">
-      <div class="section-head"><div><h2 class="section-title">Gérer mon abonnement</h2><p class="section-sub">Changer de profil ou se désinscrire.</p></div></div>
-      <div class="grid2">
-        <div class="field"><div class="label">Numéro</div><input id="managePhone" class="control" type="tel" placeholder="Ex : +596 696 12 34 56"></div>
-        <div class="field"><div class="label">Code / Référence</div><input id="manageRef" class="control" type="text" placeholder="Ex : MM-4F9A2"></div>
+    <div class="plan-card email">
+      <div class="plan-header email">
+        <div class="plan-icon">@</div>
+        <h2 class="plan-title">Alertes Email</h2>
+        <div class="plan-price">10 EUR<span>/an</span></div>
+        <div class="plan-badge">Economique</div>
       </div>
-      <div class="cta-row">
-        <button class="btn-soft" type="button" id="updateBtn">🔄 Mettre à jour</button>
-        <button class="btn btn-danger" type="button" id="unsubBtn">🛑 Se désinscrire</button>
+      <div class="plan-body">
+        <ul class="plan-features">
+          <li><svg class="email-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Alertes email detaillees</li>
+          <li><svg class="email-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Previsions completes</li>
+          <li><svg class="email-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Cartes meteo incluses</li>
+          <li><svg class="email-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Resiliation libre</li>
+        </ul>
       </div>
-      <div id="manageToast" class="toast" role="status" style="margin-top:12px;"></div>
-    </section>
+      <div class="plan-cta">
+        <a href="/alerte-email" class="btn email">S'abonner aux alertes Email</a>
+      </div>
+    </div>
+  </div>
 
-    <section class="card section">
-      <div class="section-head"><div><h2 class="section-title">Questions fréquentes</h2><p class="section-sub">Validation, coût, et désinscription.</p></div></div>
-      <div class="faq">
-        <details><summary>Quels phénomènes sont couverts ?</summary><p>Tous : orages, pluies intenses, vent fort, houle/submersion, chaleur extrême, cyclone/ouragan.</p></details>
-        <details><summary>Comment me désinscrire ?</summary><p>Envoyez <b>STOP</b> au numéro émetteur ou utilisez la section "Gérer mon abonnement".</p></details>
-        <details><summary>Mes données sont-elles partagées ?</summary><p>Non. Seuls le numéro et les préférences nécessaires sont stockés.</p></details>
-        <details><summary>Comment fonctionnent les alertes ?</summary><p>Dès qu'une vigilance jaune, orange ou rouge est émise par Météo France, vous recevez une alerte avec des conseils adaptés à votre profil.</p></details>
+  <div class="manage-section">
+    <h2>Gerer mon abonnement</h2>
+    <p>Changer de profil ou se desinscrire.</p>
+    <div class="manage-grid">
+      <div class="field">
+        <label class="label" for="managePhone">Numero ou Email</label>
+        <input id="managePhone" class="control" type="text" placeholder="+596 696 12 34 56 ou email@example.fr">
       </div>
-    </section>
+      <div class="field">
+        <label class="label" for="manageRef">Code Reference</label>
+        <input id="manageRef" class="control" type="text" placeholder="Ex: MM-4F9A2">
+      </div>
+    </div>
+    <div class="manage-btns">
+      <button id="updateBtn" class="btn-soft" type="button">Mettre a jour</button>
+      <button id="unsubBtn" class="btn-danger" type="button">Se desinscrire</button>
+    </div>
+    <div id="manageToast" class="toast"></div>
+  </div>
+
+  <div class="faq">
+    <h2>Questions frequentes</h2>
+    <div class="faq-grid">
+      <details>
+        <summary>Quels phenomenes sont couverts?</summary>
+        <p>Tous: orages, pluies intenses, vent fort, houle/submersion, chaleur extreme, cyclone/ouragan.</p>
+      </details>
+      <details>
+        <summary>Comment me desinscrire?</summary>
+        <p>SMS: envoyez STOP. Email: cliquez sur le lien de desinscription ou utilisez la section "Gerer mon abonnement".</p>
+      </details>
+      <details>
+        <summary>Mes donnees sont-elles partagees?</summary>
+        <p>Non. Seuls le contact et les preferences necessaires sont stockes.</p>
+      </details>
+      <details>
+        <summary>Comment fonctionnent les alertes?</summary>
+        <p>Des qu'une vigilance jaune, orange ou rouge est emise par Meteo France, vous recevez une alerte avec des conseils adaptes.</p>
+      </details>
+    </div>
   </div>
 </main>
 
 <footer>
-  <div class="footer-grid">
-    <div><h5>Météo Martinique</h5><p>Votre source fiable pour des prévisions précises en Martinique.</p></div>
-    <div><h5>Liens rapides</h5><p><a href="#">Conditions aujourd'hui</a></p><p><a href="#">7-jours prévisions</a></p><p><a href="#">Cartes météo</a></p><p><a href="#">Alertes météo</a></p></div>
-    <div><h5>Services</h5><p><a href="#">Météo des plages</a></p><p><a href="#">Météo marine</a></p><p><a href="#">Vigilance ouragans</a></p><p><a href="#" aria-current="page">Alertes SMS</a></p></div>
-    <div><h5>Connectez-vous</h5><p>Facebook · Twitter · Instagram</p></div>
+  <div class="footer-inner">
+    <p>2024 Meteo Martinique. Tous droits reserves.</p>
   </div>
-  <div class="copy">© 2024 Météo Martinique. Tous droits réservés.</div>
 </footer>
 
 <script>
-  const API_BASE = '/api';
-  const $ = (id) => document.getElementById(id);
+const API_BASE = '/api';
+const managePhone = document.getElementById('managePhone');
+const manageRef = document.getElementById('manageRef');
+const updateBtn = document.getElementById('updateBtn');
+const unsubBtn = document.getElementById('unsubBtn');
+const manageToast = document.getElementById('manageToast');
 
-  const phone = $("phone"), email = $("email"), profile = $("profile"), notifPref = $("notifPref");
-  const consent = $("consent"), subscribeBtn = $("subscribeBtn"), testAlert = $("testAlert");
-  const toast = $("toast"), refCodeDisplay = $("refCodeDisplay");
-  const managePhone = $("managePhone"), manageRef = $("manageRef");
-  const updateBtn = $("updateBtn"), unsubBtn = $("unsubBtn"), manageToast = $("manageToast");
+function showToast(type, msg) {
+  manageToast.className = 'toast ' + type;
+  manageToast.textContent = msg;
+}
 
-  let subscribed = false, referenceCode = null;
+async function handleUnsubscribe() {
+  const contact = managePhone.value.trim();
+  const ref = manageRef.value.trim();
 
-  function normalizePhone(val){ return (val || "").trim().replace(/\s+/g, " "); }
-  function normalizeEmail(val){ return (val || "").trim().toLowerCase(); }
-  function isPhoneLikelyValid(val){
-    const v = (val || "").replace(/\s+/g,"");
-    if (!v) return false;
-    if (v.startsWith("+") && v.length >= 10) return true;
-    if (/^0\d{9}$/.test(v)) return true;
-    return v.length >= 10;
-  }
-  function isEmailLikelyValid(val){
-    const v = (val || "").trim();
-    return v.includes("@") && v.includes(".");
-  }
-  function isContactValid(){
-    const pref = notifPref.value;
-    const phoneOk = isPhoneLikelyValid(normalizePhone(phone.value));
-    const emailOk = isEmailLikelyValid(normalizeEmail(email.value));
-    if (pref === "sms") return phoneOk;
-    if (pref === "email") return emailOk;
-    if (pref === "both") return phoneOk && emailOk;
-    return phoneOk;
+  if (!contact && !ref) {
+    showToast('err', 'Entrez un numero/email ou un code reference.');
+    return;
   }
 
-  function showToast(type, msg){ toast.className = "toast " + type; toast.textContent = msg; }
-  function clearToast(){ toast.className = "toast"; toast.textContent = ""; }
-  function showManageToast(type, msg){ manageToast.className = "toast " + type; manageToast.textContent = msg; }
-
-  function updateButtons(){
-    const contactOk = isContactValid();
-    subscribeBtn.disabled = !(contactOk && consent.checked);
-  }
-
-  async function apiCall(endpoint, method = 'GET', body = null){
-    const opts = { method, headers: {'Content-Type': 'application/json'} };
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(API_BASE + endpoint, opts);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'API Error');
-    return data;
-  }
-
-  async function handleSubscribe(){
-    clearToast();
-    const p = normalizePhone(phone.value);
-    const e = normalizeEmail(email.value);
-    const pref = notifPref.value;
-
-    if (!isContactValid()){ showToast("err", "Contact invalide pour le type de notification choisi."); return; }
-
-    subscribeBtn.disabled = true;
-    subscribeBtn.textContent = "Inscription...";
-
-    try {
-      const payload = { profile: profile.value, notification_prefs: pref };
-      if (p) payload.phone = p;
-      if (e) payload.email = e;
-
-      const data = await apiCall('/subscribe', 'POST', payload);
-
-      subscribed = true;
-      referenceCode = data.reference_code;
-      refCodeDisplay.textContent = `Référence: ${referenceCode}`;
-      showToast("ok", "Abonnement confirmé ! Vous recevrez les alertes météo.");
-
-      // Show test button
-      testAlert.style.display = "inline-block";
-
-    } catch(err){
-      showToast("err", err.message);
-    }
-
-    subscribeBtn.textContent = subscribed ? "Abonné" : "S'abonner";
-    subscribeBtn.disabled = subscribed;
-  }
-
-  async function handleTestAlert(){
-    clearToast();
-    const p = normalizePhone(phone.value);
-    const e = normalizeEmail(email.value);
+  try {
     const payload = {};
-    if (p) payload.phone = p;
-    if (e) payload.email = e;
-    try {
-      await apiCall('/subscribe/test', 'POST', payload);
-      showToast("info", "Test envoyé ! Vérifiez vos messages.");
-    } catch(err){ showToast("err", err.message); }
-  }
-
-  async function handleUnsubscribe(){
-    const p = normalizePhone(managePhone.value);
-    const ref = manageRef.value.trim();
-    if (!p && !ref){ showManageToast("err", "Entrez un numéro ou un code."); return; }
-    try {
-      await apiCall('/subscribe/unsubscribe', 'DELETE', { phone: p || null, reference_code: ref || null });
-      showManageToast("ok", "Désabonné avec succès.");
-    } catch(err){ showManageToast("err", err.message); }
-  }
-
-  phone.addEventListener("input", () => { clearToast(); updateButtons(); });
-  email.addEventListener("input", () => { clearToast(); updateButtons(); });
-  notifPref.addEventListener("change", () => { clearToast(); updateButtons(); });
-  consent.addEventListener("change", updateButtons);
-  subscribeBtn.addEventListener("click", handleSubscribe);
-  testAlert.addEventListener("click", handleTestAlert);
-  unsubBtn.addEventListener("click", handleUnsubscribe);
-
-  updateButtons();
-
-  // Stripe Checkout
-  const checkoutToast = $("checkoutToast");
-
-  function showCheckoutToast(type, msg){
-    checkoutToast.className = "toast " + type;
-    checkoutToast.textContent = msg;
-  }
-
-  async function startCheckout(planType){
-    const emailVal = normalizeEmail(email.value);
-    const phoneVal = normalizePhone(phone.value);
-
-    // Require email for checkout
-    if (!isEmailLikelyValid(emailVal)){
-      showCheckoutToast("err", "Veuillez entrer votre email ci-dessus avant de vous abonner.");
-      email.focus();
-      return;
+    if (contact.includes('@')) {
+      payload.email = contact;
+    } else {
+      payload.phone = contact;
     }
+    if (ref) payload.reference_code = ref;
 
-    // For SMS plan, also require phone
-    if (planType === 'sms_monthly' && !isPhoneLikelyValid(phoneVal)){
-      showCheckoutToast("err", "Veuillez entrer votre numéro de téléphone pour les alertes SMS.");
-      phone.focus();
-      return;
+    const res = await fetch(API_BASE + '/subscribe/unsubscribe', {
+      method: 'DELETE',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      showToast('ok', 'Desabonne avec succes.');
+    } else {
+      const err = await res.json();
+      showToast('err', err.detail || 'Erreur lors de la desinscription.');
     }
-
-    showCheckoutToast("info", "Redirection vers le paiement sécurisé...");
-
-    try {
-      const payload = {
-        plan_type: planType,
-        email: emailVal
-      };
-      if (phoneVal) payload.phone = phoneVal;
-
-      const data = await apiCall('/stripe/checkout', 'POST', payload);
-
-      if (data.checkout_url){
-        window.location.href = data.checkout_url;
-      } else {
-        showCheckoutToast("err", "Erreur lors de la création de la session de paiement.");
-      }
-    } catch(err){
-      showCheckoutToast("err", err.message || "Erreur de paiement.");
-    }
+  } catch (err) {
+    showToast('err', 'Erreur de connexion.');
   }
+}
+
+updateBtn.addEventListener('click', () => {
+  showToast('err', 'Pour mettre a jour, veuillez vous desinscrire puis vous reinscrire.');
+});
+
+unsubBtn.addEventListener('click', handleUnsubscribe);
 </script>
 </body>
 </html>

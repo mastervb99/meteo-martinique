@@ -374,9 +374,89 @@ async def get_stripe_config():
     }
 
 
+class PaymentIntentRequest(BaseModel):
+    """Request model for embedded payment."""
+    plan_type: str
+    email: str
+    phone: Optional[str] = None
+
+    @field_validator('plan_type')
+    @classmethod
+    def validate_plan(cls, v):
+        if v not in ("sms_monthly", "email_yearly"):
+            raise ValueError('Plan must be sms_monthly or email_yearly')
+        return v
+
+
+@app.post("/api/stripe/create-payment-intent")
+async def create_payment_intent(request: PaymentIntentRequest):
+    """Create PaymentIntent for embedded payment form."""
+    result = stripe_service.create_payment_intent(
+        plan_type=request.plan_type,
+        customer_email=request.email,
+        customer_phone=request.phone
+    )
+
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result.get("error", "Payment intent creation failed"))
+
+    return result
+
+
+@app.post("/api/stripe/confirm-payment")
+async def confirm_payment(payment_intent_id: str):
+    """Confirm payment and activate subscription."""
+    result = stripe_service.confirm_payment_intent(payment_intent_id)
+
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result.get("error", "Payment confirmation failed"))
+
+    # If payment succeeded, create subscription in our DB
+    if result.get("paid"):
+        phone = result.get("customer_phone")
+        email = result.get("customer_email")
+        plan_type = result.get("plan_type")
+
+        # Determine notification type based on plan
+        notification_prefs = "sms" if plan_type == "sms_monthly" else "email"
+
+        # Create subscription in our database
+        sub_result = subscription_manager.create_subscription(
+            phone_number=phone if phone else None,
+            email=email,
+            profile="Particulier",
+            notification_prefs=notification_prefs
+        )
+
+        if sub_result["success"]:
+            # Mark as verified and update with Stripe info
+            from subscriptions import get_db
+            with get_db() as conn:
+                conn.execute(
+                    """UPDATE subscribers
+                       SET verified = TRUE, email_verified = TRUE,
+                           stripe_subscription_id = ?, payment_status = 'active'
+                       WHERE (phone_number = ? OR email = ?)""",
+                    (result.get("subscription_id"), phone, email)
+                )
+
+            # Send welcome message
+            alert_service.send_welcome(
+                phone_number=phone if notification_prefs == "sms" else None,
+                email=email if notification_prefs == "email" else None,
+                profile="Particulier",
+                notification_prefs=notification_prefs
+            )
+
+        result["subscription_created"] = sub_result.get("success", False)
+        result["reference_code"] = sub_result.get("reference_code")
+
+    return result
+
+
 @app.post("/api/stripe/checkout")
 async def create_checkout(request: CheckoutRequest):
-    """Create Stripe checkout session."""
+    """Create Stripe checkout session (legacy - redirect flow)."""
     result = stripe_service.create_checkout_session(
         plan_type=request.plan_type,
         customer_email=request.email,
@@ -711,6 +791,24 @@ async def page_cartes():
 async def page_success():
     """Payment success page."""
     html_path = STATIC_DIR / "success.html"
+    if html_path.exists():
+        return FileResponse(html_path)
+    raise HTTPException(status_code=404, detail="Page not found")
+
+
+@app.get("/alerte-sms", response_class=HTMLResponse)
+async def page_alerte_sms():
+    """SMS subscription page with embedded payment."""
+    html_path = STATIC_DIR / "alerte-sms.html"
+    if html_path.exists():
+        return FileResponse(html_path)
+    raise HTTPException(status_code=404, detail="Page not found")
+
+
+@app.get("/alerte-email", response_class=HTMLResponse)
+async def page_alerte_email():
+    """Email subscription page with embedded payment."""
+    html_path = STATIC_DIR / "alerte-email.html"
     if html_path.exists():
         return FileResponse(html_path)
     raise HTTPException(status_code=404, detail="Page not found")

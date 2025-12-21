@@ -23,6 +23,96 @@ class StripeService:
     def __init__(self):
         self.prices = SUBSCRIPTION_PRICES
 
+    def create_payment_intent(
+        self,
+        plan_type: str,
+        customer_email: str,
+        customer_phone: Optional[str] = None
+    ) -> dict:
+        """Create PaymentIntent for embedded payment form."""
+        if plan_type not in self.prices:
+            raise ValueError(f"Invalid plan type: {plan_type}")
+
+        price_config = self.prices[plan_type]
+
+        try:
+            # Create or retrieve customer
+            customers = stripe.Customer.list(email=customer_email, limit=1)
+            if customers.data:
+                customer = customers.data[0]
+            else:
+                customer_data = {"email": customer_email}
+                if customer_phone:
+                    customer_data["phone"] = customer_phone
+                customer = stripe.Customer.create(**customer_data)
+
+            # Create PaymentIntent
+            intent = stripe.PaymentIntent.create(
+                amount=price_config["amount"],
+                currency=price_config["currency"],
+                customer=customer.id,
+                metadata={
+                    "plan_type": plan_type,
+                    "customer_phone": customer_phone or "",
+                    "customer_email": customer_email
+                },
+                automatic_payment_methods={"enabled": True}
+            )
+
+            logger.info(f"PaymentIntent created: {intent.id} for {customer_email}")
+            return {
+                "success": True,
+                "client_secret": intent.client_secret,
+                "payment_intent_id": intent.id,
+                "customer_id": customer.id,
+                "amount": price_config["amount"],
+                "currency": price_config["currency"]
+            }
+
+        except stripe.error.StripeError as e:
+            logger.error(f"Stripe error: {e}")
+            return {"success": False, "error": str(e)}
+
+    def confirm_payment_intent(self, payment_intent_id: str) -> dict:
+        """Verify a PaymentIntent was successful and activate subscription."""
+        try:
+            intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+
+            if intent.status == "succeeded":
+                # Create a subscription for recurring billing
+                plan_type = intent.metadata.get("plan_type")
+                price_config = self.prices.get(plan_type, {})
+
+                subscription = stripe.Subscription.create(
+                    customer=intent.customer,
+                    items=[{
+                        "price_data": {
+                            "currency": price_config.get("currency", "eur"),
+                            "unit_amount": price_config.get("amount", 499),
+                            "product_data": {"name": price_config.get("name", "Alertes Météo")},
+                            "recurring": {"interval": price_config.get("interval", "month")}
+                        }
+                    }],
+                    metadata=intent.metadata
+                )
+
+                return {
+                    "success": True,
+                    "paid": True,
+                    "payment_intent_id": payment_intent_id,
+                    "subscription_id": subscription.id,
+                    "customer_id": intent.customer,
+                    "plan_type": plan_type,
+                    "customer_phone": intent.metadata.get("customer_phone"),
+                    "customer_email": intent.metadata.get("customer_email")
+                }
+            else:
+                return {"success": True, "paid": False, "status": intent.status}
+
+        except stripe.error.StripeError as e:
+            logger.error(f"PaymentIntent verification error: {e}")
+            return {"success": False, "error": str(e)}
+
     def create_checkout_session(
         self,
         plan_type: str,

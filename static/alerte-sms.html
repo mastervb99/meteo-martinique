@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alertes SMS - 4,99/mois | Meteo Martinique</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    :root{--bg:#f4f8fb;--surface:#ffffff;--text:#0b1220;--muted:#66768a;--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.06);--shadow:0 16px 40px rgba(15,23,42,.10);--shadowSoft:0 10px 26px rgba(15,23,42,.08);--radius:18px;--radiusL:22px;--blue:#2563eb;--cyan:#06b6d4;--sky:#0ea5e9;--danger:#ef4444;--ok:#22c55e;--ink:#0f172a;}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);background:radial-gradient(900px 500px at 10% 0%,rgba(37,99,235,.10),transparent 60%),radial-gradient(900px 500px at 90% 0%,rgba(6,182,212,.10),transparent 55%),var(--bg);}
+    .container{max-width:640px;margin:0 auto;padding:22px 18px 44px;}
+    header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.72);backdrop-filter:blur(12px);border-bottom:1px solid var(--border2);}
+    .header-inner{max-width:1320px;margin:0 auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
+    .brand{display:flex;align-items:center;gap:12px;}
+    .brand-badge{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:#fff;font-weight:900;background:linear-gradient(135deg,var(--blue),var(--cyan));box-shadow:0 14px 28px rgba(37,99,235,.18);}
+    .brand-title{display:flex;flex-direction:column;line-height:1.1;}
+    .brand-title strong{font-size:20px;font-weight:900;letter-spacing:-.02em;}
+    .brand-title span{font-size:12px;color:var(--muted);font-weight:600;}
+    nav{display:flex;gap:22px;align-items:center;}
+    nav a{text-decoration:none;color:#334155;font-weight:800;font-size:14px;padding:10px 12px;border-radius:12px;transition:.15s ease;}
+    nav a:hover{background:rgba(37,99,235,.08);color:#1d4ed8;}
+    nav a.active{background:rgba(37,99,235,.12);color:#1d4ed8;}
+    .card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radiusL);box-shadow:var(--shadowSoft);overflow:hidden;}
+    .hero-bar{background:linear-gradient(90deg,var(--blue),var(--cyan));color:#fff;padding:22px;text-align:center;}
+    .hero-bar h1{margin:0;font-size:24px;font-weight:950;letter-spacing:-.02em;}
+    .hero-bar p{margin:8px 0 0;opacity:.95;font-weight:600;}
+    .price-tag{display:inline-block;margin-top:12px;background:rgba(255,255,255,.2);padding:8px 16px;border-radius:999px;font-weight:950;font-size:20px;}
+    .body{padding:24px;}
+    .field{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+    .label{font-size:13px;font-weight:900;color:#334155;letter-spacing:.02em;}
+    .control{border-radius:14px;border:1px solid rgba(15,23,42,.12);background:#fff;padding:14px;font-weight:700;color:var(--ink);outline:none;font-size:16px;width:100%;}
+    .control:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+    select.control{cursor:pointer;}
+    .help{font-size:12px;color:var(--muted);font-weight:700;line-height:1.6;}
+    .divider{height:1px;background:rgba(15,23,42,.08);margin:20px 0;}
+    .consent{display:flex;gap:10px;align-items:flex-start;padding:14px;border-radius:14px;border:1px solid rgba(37,99,235,.16);background:rgba(37,99,235,.06);font-weight:700;color:#1d4ed8;font-size:14px;margin-bottom:16px;}
+    .consent input{margin-top:2px;accent-color:#2563eb;width:18px;height:18px;}
+    #payment-element{padding:16px;border:1px solid var(--border);border-radius:14px;background:#fafbfc;margin-bottom:16px;}
+    .btn{border:0;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;padding:16px 24px;border-radius:14px;font-weight:900;cursor:pointer;width:100%;font-size:16px;box-shadow:0 16px 30px rgba(14,165,233,.18);transition:transform .12s ease,filter .12s ease;}
+    .btn:hover{filter:brightness(.98);transform:translateY(-1px);}
+    .btn:active{transform:translateY(0);}
+    .btn[disabled]{opacity:.55;cursor:not-allowed;transform:none;filter:none;box-shadow:none;}
+    .toast{display:none;margin-top:16px;padding:14px;border-radius:14px;border:1px solid rgba(15,23,42,.10);background:#fff;font-weight:800;text-align:center;}
+    .toast.ok{display:block;border-color:rgba(34,197,94,.22);background:rgba(34,197,94,.08);color:#15803d;}
+    .toast.err{display:block;border-color:rgba(239,68,68,.22);background:rgba(239,68,68,.08);color:#b91c1c;}
+    .toast.info{display:block;border-color:rgba(37,99,235,.18);background:rgba(37,99,235,.06);color:#1d4ed8;}
+    .features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+    .feature{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#334155;}
+    .feature svg{width:18px;height:18px;color:var(--ok);}
+    .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-weight:700;font-size:14px;text-decoration:none;margin-bottom:16px;}
+    .back-link:hover{color:var(--blue);}
+    .sms-preview{border-radius:14px;background:#0b1220;color:#e2e8f0;padding:16px;margin-top:20px;}
+    .bubble{background:rgba(226,232,240,.10);border:1px solid rgba(226,232,240,.12);border-radius:14px;padding:12px;font-weight:700;line-height:1.6;font-size:13px;}
+    .bubble strong{color:#fff;}
+    @media(max-width:600px){nav{display:none;}.features{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-badge">M</div>
+      <div class="brand-title"><strong>Meteo Martinique</strong><span>Previsions & vigilance en temps reel</span></div>
+    </div>
+    <nav>
+      <a href="/aujourd-hui">Aujourd'hui</a>
+      <a href="/previsions">Previsions</a>
+      <a href="/cartes">Cartes</a>
+      <a class="active" href="/">Alertes</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <a href="/" class="back-link"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Retour aux alertes</a>
+
+  <div class="card">
+    <div class="hero-bar">
+      <h1>Alertes SMS</h1>
+      <p>Recevez les alertes meteo sur votre telephone</p>
+      <div class="price-tag">4,99 EUR / mois</div>
+    </div>
+
+    <div class="body">
+      <form id="payment-form">
+        <div class="field">
+          <label class="label" for="phone">Numero de telephone</label>
+          <input id="phone" class="control" type="tel" placeholder="+596 696 12 34 56" autocomplete="tel" inputmode="tel" required>
+          <div class="help">Format: +596 ... (Martinique) ou 0696...</div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="email">Email (pour la facture)</label>
+          <input id="email" class="control" type="email" placeholder="votre@email.fr" autocomplete="email" required>
+          <div class="help">Requis pour le paiement et les factures.</div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="profile">Profil</label>
+          <select id="profile" class="control">
+            <option>Particulier</option>
+            <option>Professionnel (BTP / agriculture)</option>
+            <option>Nautique / peche / plaisance</option>
+            <option>Tourisme / plages</option>
+          </select>
+          <div class="help">Le profil adapte les conseils dans les alertes.</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="label" style="margin-bottom:12px;">Paiement securise</div>
+        <div id="payment-element"></div>
+
+        <div class="consent">
+          <input type="checkbox" id="consent" required>
+          <label for="consent">J'accepte de recevoir des alertes SMS meteo. Je peux me desinscrire avec STOP.</label>
+        </div>
+
+        <button id="submit-btn" class="btn" type="submit" disabled>
+          <span id="btn-text">Payer 4,99 EUR et s'abonner</span>
+        </button>
+
+        <div id="toast" class="toast"></div>
+      </form>
+
+      <div class="features">
+        <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Alertes instantanees</div>
+        <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Tous phenomenes</div>
+        <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Conseils adaptes</div>
+        <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Resiliation STOP</div>
+      </div>
+
+      <div class="sms-preview">
+        <div style="font-weight:950;margin-bottom:10px;font-size:12px;opacity:.7;">APERCU SMS</div>
+        <div class="bubble">
+          <strong>ALERTE VENT FORT</strong> - Martinique.<br>
+          Rafales jusqu'a <strong>70 km/h</strong> entre 16h-20h.<br>
+          Conseil: limitez deplacements, securisez objets exterieurs.
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API_BASE = '/api';
+let stripe, elements, paymentElement;
+
+async function initStripe() {
+  const configRes = await fetch(API_BASE + '/stripe/config');
+  const config = await configRes.json();
+  stripe = Stripe(config.publishable_key);
+}
+
+function showToast(type, msg) {
+  const toast = document.getElementById('toast');
+  toast.className = 'toast ' + type;
+  toast.textContent = msg;
+}
+
+function clearToast() {
+  const toast = document.getElementById('toast');
+  toast.className = 'toast';
+  toast.textContent = '';
+}
+
+function normalizePhone(val) {
+  return (val || '').trim().replace(/\s+/g, ' ');
+}
+
+function isPhoneValid(val) {
+  const v = (val || '').replace(/\s+/g, '');
+  if (!v) return false;
+  if (v.startsWith('+') && v.length >= 10) return true;
+  if (/^0\d{9}$/.test(v)) return true;
+  return v.length >= 10;
+}
+
+function isEmailValid(val) {
+  const v = (val || '').trim();
+  return v.includes('@') && v.includes('.');
+}
+
+async function createPaymentIntent() {
+  const phone = normalizePhone(document.getElementById('phone').value);
+  const email = document.getElementById('email').value.trim().toLowerCase();
+
+  const res = await fetch(API_BASE + '/stripe/create-payment-intent', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      plan_type: 'sms_monthly',
+      email: email,
+      phone: phone
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Erreur creation paiement');
+  }
+
+  return res.json();
+}
+
+async function setupPaymentForm() {
+  const phone = document.getElementById('phone');
+  const email = document.getElementById('email');
+  const consent = document.getElementById('consent');
+  const submitBtn = document.getElementById('submit-btn');
+
+  if (!isPhoneValid(phone.value) || !isEmailValid(email.value)) {
+    return;
+  }
+
+  try {
+    showToast('info', 'Chargement du formulaire de paiement...');
+    const intent = await createPaymentIntent();
+
+    elements = stripe.elements({
+      clientSecret: intent.client_secret,
+      appearance: {
+        theme: 'stripe',
+        variables: {
+          colorPrimary: '#2563eb',
+          borderRadius: '12px'
+        }
+      }
+    });
+
+    paymentElement = elements.create('payment');
+    paymentElement.mount('#payment-element');
+
+    paymentElement.on('ready', () => {
+      clearToast();
+      updateSubmitButton();
+    });
+
+    paymentElement.on('change', (event) => {
+      if (event.error) {
+        showToast('err', event.error.message);
+      } else {
+        clearToast();
+      }
+    });
+
+  } catch (err) {
+    showToast('err', err.message);
+  }
+}
+
+function updateSubmitButton() {
+  const phone = document.getElementById('phone');
+  const email = document.getElementById('email');
+  const consent = document.getElementById('consent');
+  const submitBtn = document.getElementById('submit-btn');
+
+  const valid = isPhoneValid(phone.value) && isEmailValid(email.value) && consent.checked && paymentElement;
+  submitBtn.disabled = !valid;
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+
+  const submitBtn = document.getElementById('submit-btn');
+  const btnText = document.getElementById('btn-text');
+
+  submitBtn.disabled = true;
+  btnText.textContent = 'Traitement en cours...';
+
+  try {
+    const {error, paymentIntent} = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: window.location.origin + '/success'
+      },
+      redirect: 'if_required'
+    });
+
+    if (error) {
+      showToast('err', error.message);
+      submitBtn.disabled = false;
+      btnText.textContent = 'Payer 4,99 EUR et s\'abonner';
+      return;
+    }
+
+    if (paymentIntent && paymentIntent.status === 'succeeded') {
+      // Confirm on backend
+      const confirmRes = await fetch(API_BASE + '/stripe/confirm-payment?payment_intent_id=' + paymentIntent.id, {
+        method: 'POST'
+      });
+
+      const result = await confirmRes.json();
+
+      if (result.paid) {
+        showToast('ok', 'Paiement reussi! Abonnement active. Vous recevrez un SMS de bienvenue.');
+        btnText.textContent = 'Abonnement active';
+
+        if (result.reference_code) {
+          setTimeout(() => {
+            showToast('ok', 'Reference: ' + result.reference_code + ' - Conservez ce code pour gerer votre abonnement.');
+          }, 2000);
+        }
+      } else {
+        showToast('err', 'Paiement en attente de confirmation.');
+      }
+    }
+
+  } catch (err) {
+    showToast('err', err.message || 'Erreur de paiement');
+    submitBtn.disabled = false;
+    btnText.textContent = 'Payer 4,99 EUR et s\'abonner';
+  }
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', async () => {
+  await initStripe();
+
+  const phone = document.getElementById('phone');
+  const email = document.getElementById('email');
+  const consent = document.getElementById('consent');
+  const form = document.getElementById('payment-form');
+
+  let debounceTimer;
+
+  function onInputChange() {
+    clearTimeout(debounceTimer);
+    if (isPhoneValid(phone.value) && isEmailValid(email.value) && !paymentElement) {
+      debounceTimer = setTimeout(setupPaymentForm, 500);
+    }
+    updateSubmitButton();
+  }
+
+  phone.addEventListener('input', onInputChange);
+  email.addEventListener('input', onInputChange);
+  consent.addEventListener('change', updateSubmitButton);
+  form.addEventListener('submit', handleSubmit);
+});
+</script>
+</body>
+</html>
