@@ -23,6 +23,7 @@
     nav a{text-decoration:none;color:#334155;font-weight:800;font-size:14px;padding:10px 12px;border-radius:12px;transition:.15s ease;}
     nav a:hover{background:rgba(37,99,235,.08);color:#1d4ed8;}
     nav a.active{background:rgba(37,99,235,.12);color:#1d4ed8;}
+    nav a.secondary{background:rgba(15,23,42,.06);color:#334155;}
 
     .hero{text-align:center;padding:48px 24px;background:linear-gradient(135deg,rgba(37,99,235,.08),rgba(6,182,212,.08));border-radius:var(--radiusL);margin-bottom:32px;}
     .hero h1{margin:0;font-size:36px;font-weight:950;letter-spacing:-.03em;background:linear-gradient(135deg,var(--blue),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
@@ -59,22 +60,6 @@
     .btn.sms{background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;box-shadow:0 16px 30px rgba(14,165,233,.18);}
     .btn.email{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 16px 30px rgba(34,197,94,.18);}
 
-    .manage-section{background:var(--surface);border-radius:var(--radiusL);padding:24px;box-shadow:var(--shadowSoft);}
-    .manage-section h2{margin:0 0 8px;font-size:18px;font-weight:900;}
-    .manage-section p{margin:0 0 16px;color:var(--muted);font-weight:600;font-size:14px;}
-    .manage-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-    .field{display:flex;flex-direction:column;gap:6px;}
-    .label{font-size:12px;font-weight:900;color:#334155;}
-    .control{border-radius:12px;border:1px solid var(--border);background:#fff;padding:12px;font-weight:700;color:var(--ink);outline:none;}
-    .control:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
-    .manage-btns{display:flex;gap:10px;margin-top:16px;}
-    .btn-soft{border:1px solid rgba(37,99,235,.18);background:rgba(255,255,255,.85);color:#1d4ed8;padding:12px 16px;border-radius:12px;font-weight:900;cursor:pointer;}
-    .btn-soft:hover{background:#fff;}
-    .btn-danger{background:linear-gradient(90deg,#f97316,#ef4444);color:#fff;border:0;padding:12px 16px;border-radius:12px;font-weight:900;cursor:pointer;box-shadow:0 12px 24px rgba(239,68,68,.16);}
-    .toast{display:none;margin-top:16px;padding:12px;border-radius:12px;font-weight:800;text-align:center;}
-    .toast.ok{display:block;background:rgba(34,197,94,.08);color:#15803d;border:1px solid rgba(34,197,94,.22);}
-    .toast.err{display:block;background:rgba(239,68,68,.08);color:#b91c1c;border:1px solid rgba(239,68,68,.22);}
-
     .faq{margin-top:32px;}
     .faq h2{margin:0 0 16px;font-size:18px;font-weight:900;}
     .faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -102,6 +87,7 @@
       <a href="/previsions">Previsions</a>
       <a href="/cartes">Cartes</a>
       <a class="active" href="/">Alertes</a>
+      <a class="secondary" href="/gerer">Mon compte</a>
     </nav>
   </div>
 </header>
@@ -154,26 +140,6 @@
     </div>
   </div>
 
-  <div class="manage-section">
-    <h2>Gerer mon abonnement</h2>
-    <p>Changer de profil ou se desinscrire.</p>
-    <div class="manage-grid">
-      <div class="field">
-        <label class="label" for="managePhone">Numero ou Email</label>
-        <input id="managePhone" class="control" type="text" placeholder="+596 696 12 34 56 ou email@example.fr">
-      </div>
-      <div class="field">
-        <label class="label" for="manageRef">Code Reference</label>
-        <input id="manageRef" class="control" type="text" placeholder="Ex: MM-4F9A2">
-      </div>
-    </div>
-    <div class="manage-btns">
-      <button id="updateBtn" class="btn-soft" type="button">Mettre a jour</button>
-      <button id="unsubBtn" class="btn-danger" type="button">Se desinscrire</button>
-    </div>
-    <div id="manageToast" class="toast"></div>
-  </div>
-
   <div class="faq">
     <h2>Questions frequentes</h2>
     <div class="faq-grid">
@@ -199,63 +165,9 @@
 
 <footer>
   <div class="footer-inner">
-    <p>2024 Meteo Martinique. Tous droits reserves.</p>
+    <p>2025 Meteo Martinique. Tous droits reserves.</p>
   </div>
 </footer>
 
-<script>
-const API_BASE = '/api';
-const managePhone = document.getElementById('managePhone');
-const manageRef = document.getElementById('manageRef');
-const updateBtn = document.getElementById('updateBtn');
-const unsubBtn = document.getElementById('unsubBtn');
-const manageToast = document.getElementById('manageToast');
-
-function showToast(type, msg) {
-  manageToast.className = 'toast ' + type;
-  manageToast.textContent = msg;
-}
-
-async function handleUnsubscribe() {
-  const contact = managePhone.value.trim();
-  const ref = manageRef.value.trim();
-
-  if (!contact && !ref) {
-    showToast('err', 'Entrez un numero/email ou un code reference.');
-    return;
-  }
-
-  try {
-    const payload = {};
-    if (contact.includes('@')) {
-      payload.email = contact;
-    } else {
-      payload.phone = contact;
-    }
-    if (ref) payload.reference_code = ref;
-
-    const res = await fetch(API_BASE + '/subscribe/unsubscribe', {
-      method: 'DELETE',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload)
-    });
-
-    if (res.ok) {
-      showToast('ok', 'Desabonne avec succes.');
-    } else {
-      const err = await res.json();
-      showToast('err', err.detail || 'Erreur lors de la desinscription.');
-    }
-  } catch (err) {
-    showToast('err', 'Erreur de connexion.');
-  }
-}
-
-updateBtn.addEventListener('click', () => {
-  showToast('err', 'Pour mettre a jour, veuillez vous desinscrire puis vous reinscrire.');
-});
-
-unsubBtn.addEventListener('click', handleUnsubscribe);
-</script>
 </body>
 </html>

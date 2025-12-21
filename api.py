@@ -814,6 +814,15 @@ async def page_alerte_email():
     raise HTTPException(status_code=404, detail="Page not found")
 
 
+@app.get("/gerer", response_class=HTMLResponse)
+async def page_gerer():
+    """Subscription management page."""
+    html_path = STATIC_DIR / "gerer.html"
+    if html_path.exists():
+        return FileResponse(html_path)
+    raise HTTPException(status_code=404, detail="Page not found")
+
+
 def run_server(host: str = "0.0.0.0", port: int = 8000):
     """Run the API server."""
     import uvicorn

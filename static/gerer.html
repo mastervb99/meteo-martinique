@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gerer mon abonnement | Meteo Martinique</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#f4f8fb;--surface:#ffffff;--text:#0b1220;--muted:#66768a;--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.06);--shadow:0 16px 40px rgba(15,23,42,.10);--shadowSoft:0 10px 26px rgba(15,23,42,.08);--radius:18px;--radiusL:22px;--blue:#2563eb;--cyan:#06b6d4;--green:#22c55e;--danger:#ef4444;--ink:#0f172a;}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);background:radial-gradient(900px 500px at 10% 0%,rgba(37,99,235,.10),transparent 60%),radial-gradient(900px 500px at 90% 0%,rgba(6,182,212,.10),transparent 55%),var(--bg);}
+    .container{max-width:540px;margin:0 auto;padding:22px 18px 44px;}
+    header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.72);backdrop-filter:blur(12px);border-bottom:1px solid var(--border2);}
+    .header-inner{max-width:1320px;margin:0 auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
+    .brand{display:flex;align-items:center;gap:12px;}
+    .brand-badge{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:#fff;font-weight:900;background:linear-gradient(135deg,var(--blue),var(--cyan));box-shadow:0 14px 28px rgba(37,99,235,.18);}
+    .brand-title{display:flex;flex-direction:column;line-height:1.1;}
+    .brand-title strong{font-size:20px;font-weight:900;letter-spacing:-.02em;}
+    .brand-title span{font-size:12px;color:var(--muted);font-weight:600;}
+    nav{display:flex;gap:22px;align-items:center;}
+    nav a{text-decoration:none;color:#334155;font-weight:800;font-size:14px;padding:10px 12px;border-radius:12px;transition:.15s ease;}
+    nav a:hover{background:rgba(37,99,235,.08);color:#1d4ed8;}
+    nav a.active{background:rgba(37,99,235,.12);color:#1d4ed8;}
+
+    .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-weight:700;font-size:14px;text-decoration:none;margin-bottom:16px;}
+    .back-link:hover{color:var(--blue);}
+
+    .card{background:var(--surface);border-radius:var(--radiusL);padding:28px;box-shadow:var(--shadow);}
+    .card h1{margin:0 0 8px;font-size:24px;font-weight:950;letter-spacing:-.02em;}
+    .card > p{margin:0 0 24px;color:var(--muted);font-weight:600;font-size:15px;}
+
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+    .label{font-size:13px;font-weight:900;color:#334155;}
+    .control{border-radius:14px;border:1px solid var(--border);background:#fff;padding:14px;font-weight:700;color:var(--ink);outline:none;font-size:16px;width:100%;}
+    .control:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+    .help{font-size:12px;color:var(--muted);font-weight:700;margin-top:4px;}
+
+    .btn-group{display:flex;gap:12px;margin-top:20px;}
+    .btn{flex:1;border:0;padding:14px 20px;border-radius:14px;font-weight:900;cursor:pointer;font-size:15px;transition:transform .12s ease,filter .12s ease;}
+    .btn:hover{filter:brightness(.98);transform:translateY(-1px);}
+    .btn-primary{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 12px 24px rgba(37,99,235,.16);}
+    .btn-danger{background:linear-gradient(90deg,#f97316,#ef4444);color:#fff;box-shadow:0 12px 24px rgba(239,68,68,.16);}
+
+    .toast{display:none;margin-top:20px;padding:14px;border-radius:14px;font-weight:800;text-align:center;}
+    .toast.ok{display:block;background:rgba(34,197,94,.08);color:#15803d;border:1px solid rgba(34,197,94,.22);}
+    .toast.err{display:block;background:rgba(239,68,68,.08);color:#b91c1c;border:1px solid rgba(239,68,68,.22);}
+    .toast.info{display:block;background:rgba(37,99,235,.06);color:#1d4ed8;border:1px solid rgba(37,99,235,.18);}
+
+    .divider{height:1px;background:var(--border);margin:28px 0;}
+
+    .info-box{background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.12);border-radius:14px;padding:16px;margin-bottom:24px;}
+    .info-box h3{margin:0 0 8px;font-size:14px;font-weight:900;color:#1d4ed8;}
+    .info-box p{margin:0;font-size:13px;color:#334155;font-weight:600;line-height:1.6;}
+
+    .sub-info{background:#f8fafc;border:1px solid var(--border2);border-radius:14px;padding:16px;margin-top:20px;display:none;}
+    .sub-info.visible{display:block;}
+    .sub-info h3{margin:0 0 12px;font-size:14px;font-weight:900;color:#334155;}
+    .sub-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border2);font-size:14px;}
+    .sub-row:last-child{border-bottom:0;}
+    .sub-label{color:var(--muted);font-weight:700;}
+    .sub-value{font-weight:800;color:var(--ink);}
+
+    footer{margin-top:32px;text-align:center;color:var(--muted);font-size:13px;font-weight:600;}
+
+    @media(max-width:600px){nav{display:none;}.btn-group{flex-direction:column;}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-badge">M</div>
+      <div class="brand-title"><strong>Meteo Martinique</strong><span>Previsions & vigilance en temps reel</span></div>
+    </div>
+    <nav>
+      <a href="/aujourd-hui">Aujourd'hui</a>
+      <a href="/previsions">Previsions</a>
+      <a href="/cartes">Cartes</a>
+      <a href="/">Alertes</a>
+      <a class="active" href="/gerer">Mon compte</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <a href="/" class="back-link"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Retour aux alertes</a>
+
+  <div class="card">
+    <h1>Gerer mon abonnement</h1>
+    <p>Consultez votre abonnement ou desabonnez-vous.</p>
+
+    <div class="info-box">
+      <h3>Comment trouver mon code reference ?</h3>
+      <p>Votre code reference (ex: MM-4F9A2) vous a ete envoye par SMS ou email lors de votre inscription. Il figure aussi sur vos factures.</p>
+    </div>
+
+    <div class="field">
+      <label class="label" for="contact">Numero de telephone ou Email</label>
+      <input id="contact" class="control" type="text" placeholder="+596 696 12 34 56 ou email@example.fr">
+      <div class="help">Entrez le numero ou l'email utilise lors de l'inscription.</div>
+    </div>
+
+    <div class="field">
+      <label class="label" for="refCode">Code Reference (optionnel)</label>
+      <input id="refCode" class="control" type="text" placeholder="Ex: MM-4F9A2">
+      <div class="help">Si vous l'avez, cela accelere la recherche.</div>
+    </div>
+
+    <div class="btn-group">
+      <button id="lookupBtn" class="btn btn-primary" type="button">Rechercher</button>
+      <button id="unsubBtn" class="btn btn-danger" type="button">Se desinscrire</button>
+    </div>
+
+    <div id="subInfo" class="sub-info">
+      <h3>Votre abonnement</h3>
+      <div class="sub-row"><span class="sub-label">Type</span><span id="subType" class="sub-value">-</span></div>
+      <div class="sub-row"><span class="sub-label">Profil</span><span id="subProfile" class="sub-value">-</span></div>
+      <div class="sub-row"><span class="sub-label">Statut</span><span id="subStatus" class="sub-value">-</span></div>
+      <div class="sub-row"><span class="sub-label">Reference</span><span id="subRef" class="sub-value">-</span></div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <footer>
+    2025 Meteo Martinique. Tous droits reserves.
+  </footer>
+</main>
+
+<script>
+const API_BASE = '/api';
+const contactInput = document.getElementById('contact');
+const refInput = document.getElementById('refCode');
+const lookupBtn = document.getElementById('lookupBtn');
+const unsubBtn = document.getElementById('unsubBtn');
+const toast = document.getElementById('toast');
+const subInfo = document.getElementById('subInfo');
+
+function showToast(type, msg) {
+  toast.className = 'toast ' + type;
+  toast.textContent = msg;
+}
+
+function clearToast() {
+  toast.className = 'toast';
+  toast.textContent = '';
+}
+
+function hideSubInfo() {
+  subInfo.classList.remove('visible');
+}
+
+function showSubInfo(data) {
+  document.getElementById('subType').textContent = data.notification_prefs === 'sms' ? 'SMS (4,99 EUR/mois)' : 'Email (10 EUR/an)';
+  document.getElementById('subProfile').textContent = data.profile || 'Particulier';
+  document.getElementById('subStatus').textContent = data.active ? 'Actif' : 'Inactif';
+  document.getElementById('subRef').textContent = data.reference_code || '-';
+  subInfo.classList.add('visible');
+}
+
+async function handleLookup() {
+  const contact = contactInput.value.trim();
+  const ref = refInput.value.trim();
+
+  if (!contact && !ref) {
+    showToast('err', 'Entrez un numero, email ou code reference.');
+    return;
+  }
+
+  clearToast();
+  hideSubInfo();
+
+  try {
+    let url = API_BASE + '/subscribe/';
+    if (ref) {
+      url += ref;
+    } else if (contact.includes('@')) {
+      url += '?email=' + encodeURIComponent(contact);
+    } else {
+      url += '?phone=' + encodeURIComponent(contact);
+    }
+
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      showSubInfo(data);
+      showToast('ok', 'Abonnement trouve.');
+    } else {
+      showToast('err', 'Aucun abonnement trouve avec ces informations.');
+    }
+  } catch (err) {
+    showToast('err', 'Erreur de connexion.');
+  }
+}
+
+async function handleUnsubscribe() {
+  const contact = contactInput.value.trim();
+  const ref = refInput.value.trim();
+
+  if (!contact && !ref) {
+    showToast('err', 'Entrez un numero, email ou code reference.');
+    return;
+  }
+
+  if (!confirm('Etes-vous sur de vouloir vous desinscrire ? Cette action est irreversible.')) {
+    return;
+  }
+
+  try {
+    const payload = {};
+    if (contact.includes('@')) {
+      payload.email = contact;
+    } else if (contact) {
+      payload.phone = contact;
+    }
+    if (ref) payload.reference_code = ref;
+
+    const res = await fetch(API_BASE + '/subscribe/unsubscribe', {
+      method: 'DELETE',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      hideSubInfo();
+      showToast('ok', 'Desabonnement effectue avec succes. Vous ne recevrez plus d\'alertes.');
+    } else {
+      const err = await res.json();
+      showToast('err', err.detail || 'Erreur lors de la desinscription.');
+    }
+  } catch (err) {
+    showToast('err', 'Erreur de connexion.');
+  }
+}
+
+lookupBtn.addEventListener('click', handleLookup);
+unsubBtn.addEventListener('click', handleUnsubscribe);
+
+// Allow Enter key to trigger lookup
+contactInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLookup(); });
+refInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLookup(); });
+</script>
+</body>
+</html>
