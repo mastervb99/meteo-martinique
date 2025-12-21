@@ -26,7 +26,7 @@ class StripeService:
     def create_payment_intent(
         self,
         plan_type: str,
-        customer_email: str,
+        customer_email: Optional[str] = None,
         customer_phone: Optional[str] = None
     ) -> dict:
         """Create PaymentIntent for embedded payment form."""
@@ -37,13 +37,34 @@ class StripeService:
 
         try:
             # Create or retrieve customer
-            customers = stripe.Customer.list(email=customer_email, limit=1)
-            if customers.data:
-                customer = customers.data[0]
-            else:
-                customer_data = {"email": customer_email}
+            customer = None
+
+            # Try to find existing customer by email or phone
+            if customer_email:
+                customers = stripe.Customer.list(email=customer_email, limit=1)
+                if customers.data:
+                    customer = customers.data[0]
+
+            if not customer and customer_phone:
+                # Search by phone in metadata
+                customers = stripe.Customer.list(limit=100)
+                for c in customers.data:
+                    if c.phone == customer_phone:
+                        customer = c
+                        break
+
+            # Create new customer if not found
+            if not customer:
+                customer_data = {}
+                if customer_email:
+                    customer_data["email"] = customer_email
                 if customer_phone:
                     customer_data["phone"] = customer_phone
+
+                # For SMS-only subscriptions, use phone as description
+                if not customer_email and customer_phone:
+                    customer_data["description"] = f"SMS subscription: {customer_phone}"
+
                 customer = stripe.Customer.create(**customer_data)
 
             # Create PaymentIntent
@@ -54,12 +75,13 @@ class StripeService:
                 metadata={
                     "plan_type": plan_type,
                     "customer_phone": customer_phone or "",
-                    "customer_email": customer_email
+                    "customer_email": customer_email or ""
                 },
                 automatic_payment_methods={"enabled": True}
             )
 
-            logger.info(f"PaymentIntent created: {intent.id} for {customer_email}")
+            contact_info = customer_email or customer_phone or "unknown"
+            logger.info(f"PaymentIntent created: {intent.id} for {contact_info}")
             return {
                 "success": True,
                 "client_secret": intent.client_secret,

@@ -94,11 +94,6 @@
           <div class="help">Format: +596 ... (Martinique) ou 0696...</div>
         </div>
 
-        <div class="field">
-          <label class="label" for="email">Email (pour la facture)</label>
-          <input id="email" class="control" type="email" placeholder="votre@email.fr" autocomplete="email" required>
-          <div class="help">Requis pour le paiement et les factures.</div>
-        </div>
 
         <div class="field">
           <label class="label" for="profile">Profil</label>
@@ -188,14 +183,12 @@ function isEmailValid(val) {
 
 async function createPaymentIntent() {
   const phone = normalizePhone(document.getElementById('phone').value);
-  const email = document.getElementById('email').value.trim().toLowerCase();
 
   const res = await fetch(API_BASE + '/stripe/create-payment-intent', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
       plan_type: 'sms_monthly',
-      email: email,
       phone: phone
     })
   });
@@ -210,11 +203,10 @@ async function createPaymentIntent() {
 
 async function setupPaymentForm() {
   const phone = document.getElementById('phone');
-  const email = document.getElementById('email');
   const consent = document.getElementById('consent');
   const submitBtn = document.getElementById('submit-btn');
 
-  if (!isPhoneValid(phone.value) || !isEmailValid(email.value)) {
+  if (!isPhoneValid(phone.value)) {
     return;
   }
 
@@ -256,11 +248,10 @@ async function setupPaymentForm() {
 
 function updateSubmitButton() {
   const phone = document.getElementById('phone');
-  const email = document.getElementById('email');
   const consent = document.getElementById('consent');
   const submitBtn = document.getElementById('submit-btn');
 
-  const valid = isPhoneValid(phone.value) && isEmailValid(email.value) && consent.checked && paymentElement;
+  const valid = isPhoneValid(phone.value) && consent.checked && paymentElement;
   submitBtn.disabled = !valid;
 }
 
@@ -323,7 +314,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initStripe();
 
   const phone = document.getElementById('phone');
-  const email = document.getElementById('email');
   const consent = document.getElementById('consent');
   const form = document.getElementById('payment-form');
 
@@ -331,14 +321,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function onInputChange() {
     clearTimeout(debounceTimer);
-    if (isPhoneValid(phone.value) && isEmailValid(email.value) && !paymentElement) {
+    if (isPhoneValid(phone.value) && !paymentElement) {
       debounceTimer = setTimeout(setupPaymentForm, 500);
     }
     updateSubmitButton();
   }
 
   phone.addEventListener('input', onInputChange);
-  email.addEventListener('input', onInputChange);
   consent.addEventListener('change', updateSubmitButton);
   form.addEventListener('submit', handleSubmit);
 });

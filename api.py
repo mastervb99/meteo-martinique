@@ -377,7 +377,7 @@ async def get_stripe_config():
 class PaymentIntentRequest(BaseModel):
     """Request model for embedded payment."""
     plan_type: str
-    email: str
+    email: Optional[str] = None
     phone: Optional[str] = None
 
     @field_validator('plan_type')
@@ -386,6 +386,14 @@ class PaymentIntentRequest(BaseModel):
         if v not in ("sms_monthly", "email_yearly"):
             raise ValueError('Plan must be sms_monthly or email_yearly')
         return v
+
+    @model_validator(mode='after')
+    def validate_contact_info(self):
+        if self.plan_type == 'sms_monthly' and not self.phone:
+            raise ValueError('Phone number is required for SMS subscriptions')
+        if self.plan_type == 'email_yearly' and not self.email:
+            raise ValueError('Email is required for Email subscriptions')
+        return self
 
 
 @app.post("/api/stripe/create-payment-intent")
