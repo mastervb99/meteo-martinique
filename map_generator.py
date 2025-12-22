@@ -34,6 +34,25 @@ class MartiniqueMapGenerator:
             tiles=None
         )
 
+        # Add custom Martinique topographic background
+        static_dir = Path(__file__).parent / "static"
+        fond_carte_path = static_dir / "fond-carte.png"
+
+        if fond_carte_path.exists():
+            folium.raster_layers.ImageOverlay(
+                image=str(fond_carte_path),
+                bounds=[
+                    [self.bounds["south"], self.bounds["west"]],
+                    [self.bounds["north"], self.bounds["east"]]
+                ],
+                opacity=0.8,
+                interactive=True,
+                cross_origin=False,
+                zindex=1,
+                name="Fond de carte Martinique"
+            ).add_to(m)
+
+        # Keep other tile layers as options
         folium.TileLayer(
             tiles="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
             attr="CartoDB",

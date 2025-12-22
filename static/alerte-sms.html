@@ -211,6 +211,16 @@ async function setupPaymentForm() {
   }
 
   try {
+    // Clean up existing payment element if any
+    if (paymentElement) {
+      try {
+        paymentElement.unmount();
+      } catch (e) {
+        // Ignore unmount errors
+      }
+      paymentElement = null;
+    }
+
     showToast('info', 'Chargement du formulaire de paiement...');
     const intent = await createPaymentIntent();
 
@@ -265,6 +275,11 @@ async function handleSubmit(e) {
   btnText.textContent = 'Traitement en cours...';
 
   try {
+    // Check if elements and paymentElement are properly mounted
+    if (!elements || !paymentElement) {
+      throw new Error('Le formulaire de paiement n\'est pas pret. Veuillez verifier votre numero de telephone.');
+    }
+
     const {error, paymentIntent} = await stripe.confirmPayment({
       elements,
       confirmParams: {
