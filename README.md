@@ -1,6 +1,6 @@
 # Martinique Weather Dashboard
 
-Weather data extraction, visualization, and alert notification system for Martinique using Météo France API. Includes full weather dashboard with interactive maps, charts, separate SMS/Email subscription pages with embedded Stripe payment, and Brevo notifications.
+Weather data extraction, visualization, and alert notification system for Martinique using Météo France API. Features full weather dashboard with interactive maps using custom topographic background, charts, separate SMS/Email subscription pages with embedded Stripe payment, and Brevo notifications.
 
 ## Live Demo
 
@@ -20,9 +20,10 @@ Weather data extraction, visualization, and alert notification system for Martin
 - `/alerte-email` - Email subscription with email input + embedded Stripe payment (€10/year)
 
 **Interactive Maps (Folium)**
+- Custom Martinique topographic background (fond-carte.png)
 - Vigilance map with color-coded alert overlays
 - Forecast map with city markers and weather popups
-- Precipitation heatmap
+- Precipitation heatmap with terrain details
 
 **Charts & Dashboards (Plotly)**
 - Multi-city temperature comparison (min/max over 7 days)
@@ -38,9 +39,10 @@ Weather data extraction, visualization, and alert notification system for Martin
 
 **Payment Processing (Stripe)**
 - Embedded payment form using Stripe Elements (no redirect)
-- SMS subscription: €4.99/month
+- SMS subscription: €4.99/month (phone number only)
 - Email subscription: €10/year
 - PaymentIntent API for secure embedded payments
+- Fixed payment mounting errors for smooth user experience
 
 ## Quick Start
 
@@ -160,7 +162,8 @@ martinique_weather/
 │   ├── aujourdhui.html    # Today's weather
 │   ├── previsions.html    # 7-day forecast
 │   ├── cartes.html        # Maps page
-│   └── success.html       # Payment success page
+│   ├── success.html       # Payment success page
+│   └── fond-carte.png     # Custom Martinique topographic background
 ├── requirements.txt
 ├── .env.example
 ├── Dockerfile
@@ -198,6 +201,6 @@ docker-compose logs -f martinique-weather
 
 ---
 
-**Version:** 2.3
+**Version:** 2.4
 **Author:** Vafa Bayat
-**Last Updated:** 2025-12-20
+**Last Updated:** 2025-12-22

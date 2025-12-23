@@ -1,10 +1,10 @@
 # Project Status: Martinique Weather Dashboard
 
-**Last Updated:** 2025-12-20
+**Last Updated:** 2025-12-22
 **Upwork Job:** Météo France API weather data extraction and visualization for Martinique
 **Client:** Remi
-**Status:** DEPLOYED - Full Weather Dashboard + SMS/Email Alerts + Embedded Stripe Payments
-**Version:** 2.3
+**Status:** DEPLOYED - Full Weather Dashboard + SMS/Email Alerts + Embedded Stripe Payments + Custom Background Maps
+**Version:** 2.4
 
 ---
 
@@ -28,10 +28,11 @@ Weather data extraction, visualization, and alert notification system for Martin
 | Weather Dashboard | LIVE | 4 pages: Aujourd'hui, Prévisions, Cartes, Alertes |
 | SMS Subscription Page | LIVE | Separate page with embedded Stripe payment |
 | Email Subscription Page | LIVE | Separate page with embedded Stripe payment |
-| Embedded Stripe Payment | LIVE | Payment form on page, no redirect |
+| Embedded Stripe Payment | LIVE | Payment form on page, no redirect, payment errors fixed |
 | SMS Alerts (Brevo) | LIVE | Brevo API configured |
 | Email Alerts (Brevo) | LIVE | Same Brevo integration |
-| Interactive Maps | LIVE | Vigilance, Forecast, Rain maps |
+| Interactive Maps | LIVE | Vigilance, Forecast, Rain maps with custom background |
+| Custom Background Map | LIVE | fond-carte.png topographic background integrated |
 | Weather Charts | LIVE | Temperature, City Comparison, Hourly |
 | Demo Data Generator | LIVE | /api/generate/demo endpoint |
 
@@ -50,6 +51,17 @@ Weather data extraction, visualization, and alert notification system for Martin
 ---
 
 ## Recent Changes
+
+### 2025-12-22: Stripe Payment Fix + Custom Background Map
+
+1. **Stripe Payment Error Fixed** - Resolved "Invalid value for stripe.confirmPayment()" error
+   - Added validation to ensure Payment Element is mounted before confirmation
+   - Added cleanup logic to prevent multiple payment element conflicts
+   - Improved French error messages for better user experience
+2. **Custom Background Map Integration** - Added fond-carte.png topographic background
+   - All weather maps now use Remi's custom Martinique topographic background
+   - Maintained existing tile layers (CartoDB, OpenStreetMap, Satellite) as options
+   - Background displays with 80% opacity showing detailed terrain
 
 ### 2025-12-20: Separate SMS/Email Pages + Embedded Stripe Payment
 
@@ -185,7 +197,8 @@ martinique_weather/
 │   ├── aujourdhui.html    # Today's weather
 │   ├── previsions.html    # 7-day forecast
 │   ├── cartes.html        # Maps page
-│   └── success.html       # Payment success page
+│   ├── success.html       # Payment success page
+│   └── fond-carte.png     # Custom Martinique topographic background
 ├── requirements.txt
 ├── .env.example
 ├── Dockerfile
@@ -198,7 +211,7 @@ martinique_weather/
 
 ### SMS Subscription (€4.99/month)
 1. User visits `/alerte-sms`
-2. Enters phone number, email (for invoice), and profile
+2. Enters phone number and profile (email removed as requested)
 3. Stripe Payment Element loads automatically
 4. User enters card details and clicks "Payer"
 5. Payment processed via PaymentIntent (no redirect)
@@ -223,6 +236,8 @@ martinique_weather/
 | 2025-12-18 | Brevo integration, OTP removed, dashboard pages added |
 | 2025-12-19 | Stripe payment integration (SMS €4.99/mo, Email €10/yr) |
 | 2025-12-20 | Separate SMS/Email pages, embedded Stripe payment (no redirect) |
+| 2025-12-21 | Email field removed from SMS page, payment integration fixes |
+| 2025-12-22 | Stripe payment error fixed, custom background map integrated |
 
 ---
 
